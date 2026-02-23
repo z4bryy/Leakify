@@ -109,13 +109,22 @@ const npbRepeatBtn   = $('npb-repeat-btn');
 const npbVolume      = $('npb-volume');
 
 // ══════════════════════════════════════════
-//  PARTICLES
+//  PARTICLES  (upgraded: connections + 999 symbols + more density)
 // ══════════════════════════════════════════
 (function particles() {
   const canvas = $('particles-canvas');
   const ctx    = canvas.getContext('2d');
   let W, H;
   const pts = [];
+
+  const COLORS = [
+    'rgba(191,90,242,',   // purple
+    'rgba(255,55,95,',    // pink
+    'rgba(10,132,255,',   // blue
+    'rgba(255,159,10,',   // orange
+    'rgba(48,209,88,',    // green
+  ];
+  const MAX_DIST = 110;
 
   function resize() {
     W = canvas.width  = window.innerWidth;
@@ -124,34 +133,66 @@ const npbVolume      = $('npb-volume');
   resize();
   window.addEventListener('resize', resize);
 
-  for (let i = 0; i < 90; i++) {
+  const count = window.innerWidth < 480 ? 75 : 130;
+  for (let i = 0; i < count; i++) {
     pts.push({
-      x: Math.random() * window.innerWidth,
-      y: Math.random() * window.innerHeight,
-      r: Math.random() * 1.5 + 0.4,
-      vx: (Math.random() - 0.5) * 0.25,
-      vy: (Math.random() - 0.5) * 0.25,
-      a: Math.random(),
-      da: (Math.random() * 0.005 + 0.002) * (Math.random() < 0.5 ? 1 : -1),
-      color: Math.random() < 0.6
-        ? `rgba(191,90,242,`
-        : Math.random() < 0.5
-          ? `rgba(255,55,95,`
-          : `rgba(10,132,255,`,
+      x:    Math.random() * window.innerWidth,
+      y:    Math.random() * window.innerHeight,
+      r:    Math.random() * 1.8 + 0.3,
+      vx:   (Math.random() - 0.5) * 0.28,
+      vy:   (Math.random() - 0.5) * 0.28,
+      a:    Math.random(),
+      da:   (Math.random() * 0.006 + 0.002) * (Math.random() < 0.5 ? 1 : -1),
+      color:COLORS[Math.floor(Math.random() * COLORS.length)],
+      is999:Math.random() < 0.045,         // ~4.5 % float as "999" text
+      size999: Math.random() * 5 + 9,      // font size 9–14 px
     });
   }
 
   function draw() {
     ctx.clearRect(0, 0, W, H);
+
+    // ── Connection lines between close particles ──
+    for (let i = 0; i < pts.length - 1; i++) {
+      for (let j = i + 1; j < pts.length; j++) {
+        const dx = pts[i].x - pts[j].x;
+        const dy = pts[i].y - pts[j].y;
+        const d  = Math.sqrt(dx * dx + dy * dy);
+        if (d < MAX_DIST) {
+          const alpha = (1 - d / MAX_DIST) * 0.10;
+          ctx.beginPath();
+          ctx.moveTo(pts[i].x, pts[i].y);
+          ctx.lineTo(pts[j].x, pts[j].y);
+          ctx.strokeStyle = `rgba(191,90,242,${alpha.toFixed(3)})`;
+          ctx.lineWidth   = 0.6;
+          ctx.stroke();
+        }
+      }
+    }
+
+    // ── Dots & 999 symbols ──
     pts.forEach(p => {
-      p.x += p.vx; p.y += p.vy; p.a += p.da;
-      if (p.x < 0) p.x = W; if (p.x > W) p.x = 0;
-      if (p.y < 0) p.y = H; if (p.y > H) p.y = 0;
+      p.x  += p.vx;  p.y  += p.vy;
+      p.a  += p.da;
+      if (p.x < 0) p.x = W;  if (p.x > W) p.x = 0;
+      if (p.y < 0) p.y = H;  if (p.y > H) p.y = 0;
       if (p.a < 0 || p.a > 1) p.da *= -1;
-      ctx.beginPath();
-      ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
-      ctx.fillStyle = `${p.color}${p.a.toFixed(2)})`;
-      ctx.fill();
+
+      if (p.is999) {
+        ctx.save();
+        ctx.globalAlpha   = Math.max(0, p.a * 0.22);
+        ctx.fillStyle     = `${p.color}1)`;
+        ctx.font          = `700 ${p.size999}px Inter,sans-serif`;
+        ctx.textAlign     = 'center';
+        ctx.textBaseline  = 'middle';
+        ctx.fillText('999', p.x, p.y);
+        ctx.restore();
+      } else {
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
+        ctx.fillStyle = `${p.color}${p.a.toFixed(2)})`;
+        ctx.fill();
+      }
     });
     requestAnimationFrame(draw);
   }
@@ -405,8 +446,17 @@ function renderSongs() {
     `;
 
     card.addEventListener('click', (e) => {
-      if (!e.target.closest('.track-card-action')) playSong(idx);
-      else playSong(idx);
+      // Ripple burst
+      const ripple = document.createElement('span');
+      ripple.className = 'track-ripple';
+      const rect = card.getBoundingClientRect();
+      const cx = (e.touches ? e.touches[0].clientX : e.clientX) - rect.left;
+      const cy = (e.touches ? e.touches[0].clientY : e.clientY) - rect.top;
+      ripple.style.left = cx + 'px';
+      ripple.style.top  = cy + 'px';
+      card.appendChild(ripple);
+      setTimeout(() => ripple.remove(), 650);
+      playSong(idx);
     });
 
     fragment.appendChild(card);
