@@ -7,7 +7,7 @@ import os
 IS_VERCEL = bool(os.environ.get('VERCEL'))
 GITHUB_LFS_BASE = os.environ.get(
     'AUDIO_BASE_URL',
-    'https://media.githubusercontent.com/media/z4bryy/Leakfiy/main/Leakify-music-src'
+    'https://media.githubusercontent.com/media/z4bryy/Leakify/main/Leakify-music-src'
 )
 
 app = Flask(__name__)
