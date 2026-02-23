@@ -1,6 +1,7 @@
-from flask import Flask, jsonify, send_from_directory, render_template
+from flask import Flask, jsonify, send_from_directory, render_template, request
 from urllib.parse import quote as urlquote
 import os
+import hmac
 
 # Vercel does NOT pull Git LFS objects — serve audio from GitHub's LFS CDN instead.
 # Set AUDIO_BASE_URL env var to override (e.g. for a different CDN).
@@ -54,6 +55,19 @@ def generate_icons():
         pass
 
 generate_icons()
+
+@app.route('/api/login', methods=['POST'])
+def login():
+    """Server-side credential check — credentials live in env vars, never in client JS."""
+    expected_user = os.environ.get('LOGIN_USER', 'z4bry87')
+    expected_pass = os.environ.get('LOGIN_PASS', 'MkZ808999')
+    data = request.get_json(silent=True) or {}
+    user_ok = hmac.compare_digest(data.get('user', ''), expected_user)
+    pass_ok = hmac.compare_digest(data.get('pass', ''), expected_pass)
+    if user_ok and pass_ok:
+        return jsonify({'ok': True})
+    return jsonify({'ok': False}), 401
+
 
 @app.route('/favicon.ico')
 def favicon():

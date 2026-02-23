@@ -5,9 +5,6 @@
 
 'use strict';
 
-// ── Credentials ──────────────────────────────
-const CREDS = { user: 'z4bry87', pass: 'MkZ808999' };
-
 // ── State ─────────────────────────────────────
 let allSongs      = [];
 let filteredSongs = [];
@@ -242,19 +239,31 @@ function showScreen(el) {
 //  LOGIN
 // ══════════════════════════════════════════
 function setupLoginEvents() {
-  loginForm.addEventListener('submit', e => {
+  loginForm.addEventListener('submit', async e => {
     e.preventDefault();
     const u = loginUser.value.trim();
     const p = loginPass.value;
-    if (u === CREDS.user && p === CREDS.pass) {
-      loginError.classList.add('hidden');
-      loginBtn.classList.add('loading');
-      setTimeout(() => startVideoScreen(), 600);
-    } else {
+    loginBtn.classList.add('loading');
+    loginError.classList.add('hidden');
+    try {
+      const res = await fetch('/api/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ user: u, pass: p }),
+      });
+      const data = await res.json();
+      if (data.ok) {
+        setTimeout(() => startVideoScreen(), 300);
+      } else {
+        loginError.classList.remove('hidden');
+        loginError.textContent = 'Wrong credentials. Try again.';
+        loginPass.value = '';
+        loginPass.focus();
+        loginBtn.classList.remove('loading');
+      }
+    } catch {
       loginError.classList.remove('hidden');
-      loginError.textContent = 'Wrong credentials. Try again.';
-      loginPass.value = '';
-      loginPass.focus();
+      loginError.textContent = 'Network error. Please retry.';
       loginBtn.classList.remove('loading');
     }
   });
