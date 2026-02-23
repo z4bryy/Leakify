@@ -14,17 +14,20 @@ ARTIST_FOLDERS = [
     "D4vd",
 ]
 
-# Create folders if they don't exist
-for folder in [MUSIC_FOLDER, VIDEO_FOLDER]:
-    if not os.path.exists(folder):
-        os.makedirs(folder)
+# Create folders if they don't exist (skipped on read-only serverless filesystems)
+try:
+    for folder in [MUSIC_FOLDER, VIDEO_FOLDER]:
+        if not os.path.exists(folder):
+            os.makedirs(folder)
 
-for artist in ARTIST_FOLDERS:
-    artist_dir = os.path.join(MUSIC_FOLDER, artist)
-    if not os.path.exists(artist_dir):
-        os.makedirs(artist_dir)
+    for artist in ARTIST_FOLDERS:
+        artist_dir = os.path.join(MUSIC_FOLDER, artist)
+        if not os.path.exists(artist_dir):
+            os.makedirs(artist_dir)
+except OSError:
+    pass
 
-# Generate placeholder PNG icons if Pillow is available
+# Generate placeholder PNG icons if Pillow is available (skipped on read-only serverless)
 def generate_icons():
     try:
         from PIL import Image, ImageDraw
@@ -38,7 +41,7 @@ def generate_icons():
                 inner = size // 3
                 draw.ellipse([inner, inner, size - inner, size - inner], fill=(6, 0, 8))
                 img.save(path)
-    except ImportError:
+    except (ImportError, OSError):
         pass
 
 generate_icons()
