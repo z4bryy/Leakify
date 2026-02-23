@@ -95,6 +95,7 @@ const fpoFill        = $('fpo-progress-fill');
 const fpoThumb       = $('fpo-progress-thumb');
 const fpoElapsed     = $('fpo-elapsed');
 const fpoDuration    = $('fpo-duration');
+const npbProgressStripFill = $('npb-progress-strip-fill');
 const fpoPlayBtn     = $('fpo-play-btn');
 const fpoPrevBtn     = $('fpo-prev-btn');
 const fpoNextBtn     = $('fpo-next-btn');
@@ -122,6 +123,8 @@ const npbVolume      = $('npb-volume');
     'rgba(48,209,88,',    // green
   ];
   const MAX_DIST = 110;
+  // Skip expensive O(n²) connection lines on mobile — not visible on small screens
+  const showLines = window.innerWidth >= 768;
 
   function resize() {
     W = canvas.width  = window.innerWidth;
@@ -149,20 +152,22 @@ const npbVolume      = $('npb-volume');
   function draw() {
     ctx.clearRect(0, 0, W, H);
 
-    // ── Connection lines between close particles ──
-    for (let i = 0; i < pts.length - 1; i++) {
-      for (let j = i + 1; j < pts.length; j++) {
-        const dx = pts[i].x - pts[j].x;
-        const dy = pts[i].y - pts[j].y;
-        const d  = Math.sqrt(dx * dx + dy * dy);
-        if (d < MAX_DIST) {
-          const alpha = (1 - d / MAX_DIST) * 0.10;
-          ctx.beginPath();
-          ctx.moveTo(pts[i].x, pts[i].y);
-          ctx.lineTo(pts[j].x, pts[j].y);
-          ctx.strokeStyle = `rgba(191,90,242,${alpha.toFixed(3)})`;
-          ctx.lineWidth   = 0.6;
-          ctx.stroke();
+    // ── Connection lines (desktop only — O(n²) too costly on mobile) ──
+    if (showLines) {
+      for (let i = 0; i < pts.length - 1; i++) {
+        for (let j = i + 1; j < pts.length; j++) {
+          const dx = pts[i].x - pts[j].x;
+          const dy = pts[i].y - pts[j].y;
+          const d  = Math.sqrt(dx * dx + dy * dy);
+          if (d < MAX_DIST) {
+            const alpha = (1 - d / MAX_DIST) * 0.10;
+            ctx.beginPath();
+            ctx.moveTo(pts[i].x, pts[i].y);
+            ctx.lineTo(pts[j].x, pts[j].y);
+            ctx.strokeStyle = `rgba(191,90,242,${alpha.toFixed(3)})`;
+            ctx.lineWidth   = 0.6;
+            ctx.stroke();
+          }
         }
       }
     }
@@ -415,6 +420,20 @@ function applyFilter() {
 // ══════════════════════════════════════════
 //  RENDER
 // ══════════════════════════════════════════
+// IntersectionObserver for staggered card reveals
+let cardRevealObserver = null;
+function setupRevealObserver() {
+  if (cardRevealObserver) cardRevealObserver.disconnect();
+  cardRevealObserver = new IntersectionObserver((entries) => {
+    entries.forEach(entry => {
+      if (entry.isIntersecting) {
+        entry.target.classList.add('revealed');
+        cardRevealObserver.unobserve(entry.target);
+      }
+    });
+  }, { threshold: 0.1, rootMargin: '0px 0px 40px 0px' });
+}
+
 function renderSongs() {
   trackCount.textContent = `${filteredSongs.length} song${filteredSongs.length !== 1 ? 's' : ''}`;
 
@@ -423,14 +442,20 @@ function renderSongs() {
     return;
   }
 
+  setupRevealObserver();
+
   const fragment = document.createDocumentFragment();
   filteredSongs.forEach((song, idx) => {
     const card = document.createElement('div');
-    card.className = 'track-card';
+    // Use reveal-ready for IntersectionObserver — first 12 cards animate immediately
+    if (idx < 12) {
+      card.className = 'track-card';
+      const delay = Math.min(idx * 0.04, 0.45);
+      card.style.animationDelay = `${delay}s`;
+    } else {
+      card.className = 'track-card reveal-ready';
+    }
     if (idx === currentIndex) card.classList.add('active');
-
-    const delay = Math.min(idx * 0.03, 0.5);
-    card.style.animationDelay = `${delay}s`;
 
     card.innerHTML = `
       <div class="track-card-num">${idx + 1}</div>
@@ -473,6 +498,11 @@ function renderSongs() {
 
   songList.innerHTML = '';
   songList.appendChild(fragment);
+
+  // Observe off-screen cards for staggered reveal
+  songList.querySelectorAll('.track-card.reveal-ready').forEach(c => {
+    cardRevealObserver && cardRevealObserver.observe(c);
+  });
 }
 
 function escHtml(str) {
@@ -508,12 +538,12 @@ function onPlayStart(song) {
   heroEq.classList.add('active');
 
   // Mini bar
-  npbTitle.textContent  = song.display;
+  applyMarquee(npbTitle, song.display);
   npbArtist.textContent = song.artist;
   nowPlayingBar.classList.add('visible', 'playing');
 
   // FPO
-  fpoTitle.textContent  = song.display;
+  applyMarquee(fpoTitle, song.display);
   fpoArtist.textContent = song.artist;
   fpoArt.classList.add('playing');
   fpoArtGlow.classList.add('active');
@@ -522,7 +552,41 @@ function onPlayStart(song) {
   setArtTint(song.artist);
 
   updatePlayButtons(true);
-  renderSongs(); // refresh active state
+  // Only update active class in DOM — no full re-render
+  updateActiveCard();
+}
+
+/** Swap .active class onto the right card without rebuilding the list */
+function updateActiveCard() {
+  const cards = songList.querySelectorAll('.track-card');
+  cards.forEach((c, i) => c.classList.toggle('active', i === currentIndex));
+  if (cards[currentIndex]) {
+    cards[currentIndex].classList.remove('buffering');
+    cards[currentIndex].scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+  }
+}
+
+/** Set text on an element and start a marquee scroll if it overflows. */
+function applyMarquee(el, text) {
+  // Restore to plain text first for accurate measurement
+  el.innerHTML = '';
+  el.style.removeProperty('text-overflow');
+  el.textContent = text;
+
+  requestAnimationFrame(() => requestAnimationFrame(() => {
+    const overflow = el.scrollWidth - el.clientWidth;
+    if (overflow > 6) {
+      // Wrap in animated span so parent clips at its own width
+      el.innerHTML = '';
+      el.style.textOverflow = 'clip';
+      const span = document.createElement('span');
+      span.textContent = text;
+      span.style.cssText = 'display:inline-block; white-space:nowrap; padding-right:40px;';
+      span.style.setProperty('--marquee-tx', `-${overflow + 40}px`);
+      span.classList.add('marquee-text');
+      el.appendChild(span);
+    }
+  }));
 }
 
 function setArtTint(artist) {
@@ -605,8 +669,10 @@ function formatTime(s) {
 function updateProgress() {
   if (!audio.duration || isSeeking) return;
   const pct = (audio.currentTime / audio.duration) * 100;
-  fpoFill.style.width  = pct + '%';
-  fpoThumb.style.left  = pct + '%';
+  const pctStr = pct + '%';
+  fpoFill.style.width  = pctStr;
+  fpoThumb.style.left  = pctStr;
+  if (npbProgressStripFill) npbProgressStripFill.style.width = pctStr;
   fpoElapsed.textContent   = formatTime(audio.currentTime);
   fpoDuration.textContent  = formatTime(audio.duration);
 }
@@ -743,6 +809,15 @@ function setupAllEvents() {
   });
   audio.addEventListener('loadedmetadata', () => {
     fpoDuration.textContent = formatTime(audio.duration);
+  });
+  // Buffering feedback — show spinner ring on the active track card
+  audio.addEventListener('waiting', () => {
+    const cards = songList.querySelectorAll('.track-card');
+    if (cards[currentIndex]) cards[currentIndex].classList.add('buffering');
+  });
+  audio.addEventListener('playing', () => {
+    songList.querySelectorAll('.track-card.buffering')
+      .forEach(c => c.classList.remove('buffering'));
   });
 
   // Progress bar seek

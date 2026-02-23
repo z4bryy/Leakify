@@ -1607,3 +1607,140 @@ body {
 }
 .update-toast.hidden { display: none; }
 .update-toast.toast-error { border-color: rgba(255,55,95,0.5); color: #FF375F; }
+
+/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+   OPTIMISATIONS & POLISH  (added Feb 2026)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+
+/* ─── Performance: layout containment on every card ─── */
+.track-card {
+  contain: layout style;
+}
+
+/* ─── Performance: disable expensive per-card shimmer on mobile ─── */
+@media (max-width: 767px) {
+  .track-card::after { display: none; }
+}
+
+/* ─── Performance: reduce aurora blur cost ─── */
+.aurora-layer { will-change: transform; }
+
+/* ─── FPO: iOS-style spring entrance (scale + slide) ─── */
+.full-player-overlay {
+  transform: translateY(100%) scale(0.97);
+  transition: transform 0.52s cubic-bezier(0.32, 0.72, 0, 1),
+              opacity  0.35s var(--ease);
+  opacity: 0;
+  transform-origin: bottom center;
+}
+.full-player-overlay.open {
+  transform: translateY(0) scale(1);
+  opacity: 1;
+}
+
+/* ─── Mini-player thin progress strip ─── */
+.npb-progress-strip {
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 2.5px;
+  border-radius: 20px 20px 0 0;
+  overflow: hidden;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.4s var(--ease);
+}
+.now-playing-bar.visible .npb-progress-strip { opacity: 1; }
+.npb-progress-strip::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: rgba(255,255,255,0.08);
+}
+.npb-progress-strip-fill {
+  position: absolute;
+  top: 0; left: 0; height: 100%;
+  width: 0%;
+  background: linear-gradient(90deg, var(--purple), var(--pink));
+  transition: width 0.3s linear;
+  box-shadow: 0 0 8px rgba(191,90,242,0.65);
+}
+
+/* ─── Marquee for long track titles ─── */
+.marquee-clip {
+  overflow: hidden;
+  white-space: nowrap;
+  display: block;
+}
+.marquee-text {
+  display: inline-block;
+  animation: marqueeScroll 14s ease-in-out infinite;
+  padding-right: 48px;
+}
+@keyframes marqueeScroll {
+  0%,  18% { transform: translateX(0); }
+  70%, 82% { transform: translateX(var(--marquee-tx, -60%)); }
+  100%      { transform: translateX(0); }
+}
+
+/* ─── Audio buffering: loading ring on track art ─── */
+.track-card.buffering .track-card-art svg { opacity: 0.2; }
+.track-card.buffering .track-card-art::after {
+  content: '';
+  position: absolute;
+  width: 22px; height: 22px;
+  border: 2px solid rgba(191,90,242,0.25);
+  border-top-color: var(--purple);
+  border-radius: 50%;
+  animation: spin 0.75s linear infinite;
+  z-index: 3;
+}
+
+/* ─── Desktop pointer hover states ─── */
+@media (hover: hover) {
+  .icon-btn:hover {
+    background: rgba(191,90,242,0.14);
+    color: var(--purple);
+    border-color: rgba(191,90,242,0.40);
+    transform: scale(1.07);
+  }
+  .track-card:hover .track-card-action { color: var(--purple); opacity: 1; }
+  .fpo-ctrl-btn:not(.fpo-play-big):hover {
+    background: rgba(255,255,255,0.08);
+    color: var(--text-1);
+    transform: scale(1.1);
+  }
+  .fpo-play-big:hover {
+    transform: scale(1.06);
+    box-shadow: 0 12px 48px rgba(191,90,242,0.68);
+  }
+  .pill:hover:not(.active) {
+    background: rgba(255,255,255,0.10);
+    border-color: rgba(191,90,242,0.35);
+    color: var(--text-1);
+  }
+}
+
+/* ─── Track card: entrance via IntersectionObserver (class toggled in JS) ─── */
+.track-card.reveal-ready {
+  opacity: 0;
+  transform: translateX(-18px) scale(0.97);
+}
+.track-card.revealed {
+  opacity: 1;
+  transform: translateX(0) scale(1);
+  transition: opacity 0.38s var(--ease-bounce), transform 0.38s var(--ease-bounce);
+}
+
+/* ─── Active card: subtle animated left accent ─── */
+.track-card.active::before {
+  animation: accentPulse 2.8s ease-in-out infinite;
+}
+@keyframes accentPulse {
+  0%,100% { opacity: 1; box-shadow: none; }
+  50%     { opacity: 1; box-shadow: 2px 0 12px rgba(191,90,242,0.55); }
+}
+
+/* ─── FPO title marquee override ─── */
+#fpo-title.marquee-text {
+  animation-duration: 16s;
+}
