@@ -8,9 +8,9 @@ __pycache__/
 build/
 dist/
 
-# Music & Video (large binary files — serve locally)
-Leakify-music-src/
-static/videos/
+# Music & Video tracked via Git LFS (see .gitattributes)
+# Leakify-music-src/ — tracked
+# static/videos/     — tracked
 
 # OS
 .DS_Store
