@@ -478,7 +478,7 @@ function playSong(idx) {
   currentIndex = idx;
   const song = filteredSongs[idx];
 
-  audio.src = `/play/${encodeURIComponent(song.filename)}`;
+  audio.src = song.url || `/play/${encodeURIComponent(song.filename)}`;
   audio.load();
   audio.play()
     .then(() => {

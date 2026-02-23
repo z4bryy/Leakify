@@ -1,5 +1,14 @@
 from flask import Flask, jsonify, send_from_directory, render_template
+from urllib.parse import quote as urlquote
 import os
+
+# Vercel does NOT pull Git LFS objects — serve audio from GitHub's LFS CDN instead.
+# Set AUDIO_BASE_URL env var to override (e.g. for a different CDN).
+IS_VERCEL = bool(os.environ.get('VERCEL'))
+GITHUB_LFS_BASE = os.environ.get(
+    'AUDIO_BASE_URL',
+    'https://media.githubusercontent.com/media/z4bryy/Leakfiy/main/Leakify-music-src'
+)
 
 app = Flask(__name__)
 
@@ -129,12 +138,17 @@ def get_songs():
 
         # Sort by display name, then strip internal fields
         for t in sorted(best.values(), key=lambda x: x["display"].lower()):
+            if IS_VERCEL:
+                audio_url = f"{GITHUB_LFS_BASE}/{urlquote(t['filename'], safe='/')}"
+            else:
+                audio_url = f"/play/{urlquote(t['filename'], safe='/')}"
             songs.append({
                 "display":   t["display"],
                 "filename":  t["filename"],
                 "artist":    t["artist"],
                 "subfolder": t["subfolder"],
                 "tag":       t["tag"],
+                "url":       audio_url,
             })
 
     # Final sort: artist first, then display name
