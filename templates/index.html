@@ -1,0 +1,281 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="Leakify" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="theme-color" content="#060008" />
+  <meta name="format-detection" content="telephone=no" />
+  <link rel="apple-touch-icon" href="/static/icon-192.png" />
+  <!-- iOS splash screens -->
+  <link rel="apple-touch-startup-image" href="/static/icon-512.png" />
+  <link rel="manifest" href="/static/manifest.json" />
+  <title>Leakify</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="/static/style.css" />
+</head>
+<body>
+
+<!-- ═══════════ PARTICLES CANVAS ═══════════ -->
+<canvas id="particles-canvas"></canvas>
+
+<!-- ═══════════════ LOGIN SCREEN ═══════════════ -->
+<div id="screen-login" class="screen active">
+  <div class="login-bg-glow"></div>
+  <div class="login-card">
+    <div class="login-logo-wrap">
+      <div class="login-logo-ring">
+        <svg class="login-logo-icon" viewBox="0 0 60 60" fill="none">
+          <circle cx="30" cy="30" r="28" stroke="url(#logoGrad)" stroke-width="2.5"/>
+          <path d="M24 20v20l16-10L24 20z" fill="url(#logoGrad2)"/>
+          <defs>
+            <linearGradient id="logoGrad" x1="0" y1="0" x2="60" y2="60" gradientUnits="userSpaceOnUse">
+              <stop stop-color="#BF5AF2"/>
+              <stop offset="1" stop-color="#FF375F"/>
+            </linearGradient>
+            <linearGradient id="logoGrad2" x1="20" y1="20" x2="44" y2="40" gradientUnits="userSpaceOnUse">
+              <stop stop-color="#BF5AF2"/>
+              <stop offset="1" stop-color="#FF375F"/>
+            </linearGradient>
+          </defs>
+        </svg>
+      </div>
+      <h1 class="login-title">LEAKIFY</h1>
+      <p class="login-subtitle">JuiceWrld Private Vault</p>
+    </div>
+    <form id="login-form" autocomplete="off">
+      <div class="input-group" id="login-input-group">
+        <div class="input-wrap">
+          <svg class="input-icon" viewBox="0 0 24 24" fill="currentColor"><path d="M12 12c2.7 0 4.8-2.1 4.8-4.8S14.7 2.4 12 2.4 7.2 4.5 7.2 7.2 9.3 12 12 12zm0 2.4c-3.2 0-9.6 1.6-9.6 4.8v2.4h19.2v-2.4c0-3.2-6.4-4.8-9.6-4.8z"/></svg>
+          <input type="text" id="login-user" placeholder="USERNAME" autocomplete="off" spellcheck="false" />
+        </div>
+        <div class="input-wrap">
+          <svg class="input-icon" viewBox="0 0 24 24" fill="currentColor"><path d="M18 8h-1V6c0-2.8-2.2-5-5-5S7 3.2 7 6v2H6c-1.1 0-2 .9-2 2v10c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V10c0-1.1-.9-2-2-2zm-6 9c-1.1 0-2-.9-2-2s.9-2 2-2 2 .9 2 2-.9 2-2 2zm3.1-9H8.9V6c0-1.7 1.4-3.1 3.1-3.1 1.7 0 3.1 1.4 3.1 3.1v2z"/></svg>
+          <input type="password" id="login-pass" placeholder="PASSWORD" autocomplete="off" />
+        </div>
+      </div>
+      <div id="login-error" class="login-error hidden">Wrong credentials. Try again.</div>
+      <button type="submit" class="login-btn">
+        <span class="login-btn-text">ENTER THE VAULT</span>
+        <svg viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>
+      </button>
+    </form>
+    <p class="login-footer">999 // WRLD ON DRUGS</p>
+  </div>
+</div>
+
+<!-- ═══════════════ VIDEO SCREEN ═══════════════ -->
+<div id="screen-video" class="screen">
+  <video id="intro-video" playsinline webkit-playsinline preload="auto">
+    <source src="/video/juicewrldloading.mp4" type="video/mp4" />
+  </video>
+  <div class="video-overlay">
+    <div class="video-logo">
+      <span class="video-logo-text">LEAKIFY</span>
+      <div class="video-logo-bar"></div>
+    </div>
+    <div class="video-loading-bar-wrap">
+      <div class="video-loading-bar" id="video-loading-bar"></div>
+    </div>
+    <button id="video-skip-btn" class="video-skip-btn hidden">TAP TO SKIP</button>
+  </div>
+</div>
+
+<!-- ═══════════════ PLAYER SCREEN ═══════════════ -->
+<div id="screen-player" class="screen">
+
+  <!-- Background aurora layers -->
+  <div class="aurora-layer aurora-1"></div>
+  <div class="aurora-layer aurora-2"></div>
+  <div class="aurora-layer aurora-3"></div>
+
+  <!-- ── TOP HEADER ── -->
+  <header class="player-header">
+    <div class="header-left">
+      <div class="header-logo">L</div>
+      <span class="header-title">LEAKIFY</span>
+    </div>
+    <div class="header-actions">
+      <button class="icon-btn" id="search-toggle-btn" title="Search">
+        <svg viewBox="0 0 24 24" fill="currentColor"><path d="M15.5 14h-.79l-.28-.27C15.41 12.59 16 11.11 16 9.5 16 5.91 13.09 3 9.5 3S3 5.91 3 9.5 5.91 16 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/></svg>
+      </button>
+      <button class="icon-btn" id="refresh-btn" title="Refresh">
+        <svg viewBox="0 0 24 24" fill="currentColor"><path d="M17.65 6.35C16.2 4.9 14.21 4 12 4c-4.42 0-7.99 3.58-7.99 8s3.57 8 7.99 8c3.73 0 6.84-2.55 7.73-6h-2.08c-.82 2.33-3.04 4-5.65 4-3.31 0-6-2.69-6-6s2.69-6 6-6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35z"/></svg>
+      </button>
+      <button class="icon-btn" id="update-btn" title="Aktualizovat aplikaci">
+        <svg viewBox="0 0 24 24" fill="currentColor"><path d="M20 18H4v-2h16v2zm-8-4l-6-6h4V4h4v4h4l-6 6z"/></svg>
+      </button>
+    </div>
+  </header>
+  <div id="update-toast" class="update-toast hidden"></div>
+
+  <!-- ── SEARCH BAR (collapsible) ── -->
+  <div class="search-bar-wrap" id="search-bar-wrap">
+    <div class="search-bar-inner">
+      <svg class="sb-icon" viewBox="0 0 24 24" fill="currentColor"><path d="M15.5 14h-.79l-.28-.27C15.41 12.59 16 11.11 16 9.5 16 5.91 13.09 3 9.5 3S3 5.91 3 9.5 5.91 16 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/></svg>
+      <input type="text" id="search-input" placeholder="Search songs, artists…" />
+      <button class="sb-clear hidden" id="search-clear">✕</button>
+    </div>
+  </div>
+
+  <!-- ── ARTIST FILTER PILLS ── -->
+  <div class="pills-wrap" id="pills-wrap">
+    <div class="pills-inner" id="pills-inner">
+      <button class="pill active" data-artist="all">All</button>
+      <!-- dynamic artist pills injected here -->
+    </div>
+  </div>
+
+  <!-- ── SCROLLABLE CONTENT ── -->
+  <main class="player-content" id="player-content">
+
+    <!-- NOW PLAYING HERO -->
+    <section class="now-playing-hero" id="now-playing-hero">
+      <div class="hero-art-wrap">
+        <div class="hero-art" id="hero-art">
+          <div class="hero-art-inner">
+            <svg viewBox="0 0 80 80" fill="none">
+              <circle cx="40" cy="40" r="38" stroke="rgba(191,90,242,0.4)" stroke-width="1.5"/>
+              <path d="M32 26v28l22-14-22-14z" fill="rgba(191,90,242,0.7)"/>
+            </svg>
+          </div>
+          <div class="hero-art-vinyl"></div>
+        </div>
+        <div class="hero-glow" id="hero-glow"></div>
+      </div>
+      <div class="hero-text">
+        <div class="hero-badge">NOW PLAYING</div>
+        <h2 class="hero-track-name" id="hero-track-name">Select a Track</h2>
+        <p class="hero-artist-name" id="hero-artist-name">Tap any song below</p>
+        <div class="hero-eq" id="hero-eq">
+          <span></span><span></span><span></span><span></span><span></span>
+        </div>
+      </div>
+    </section>
+
+    <!-- TRACK GRID -->
+    <section class="tracks-section">
+      <div class="tracks-header">
+        <h3 class="tracks-heading">Your Library</h3>
+        <span class="tracks-count" id="track-count">— songs</span>
+      </div>
+      <div class="track-grid" id="song-list">
+        <div class="tracks-loading">
+          <div class="spinner"></div>
+          <span>Loading vault…</span>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <!-- ── MINI PLAYER (expanded player overlay) ── -->
+  <div class="now-playing-bar" id="now-playing-bar">
+    <div class="npb-row npb-row-main">
+      <div class="npb-art" id="npb-art">
+        <svg viewBox="0 0 40 40" fill="none">
+          <circle cx="20" cy="20" r="18" stroke="rgba(191,90,242,0.5)" stroke-width="1.5"/>
+          <path d="M16 13v14l10-7-10-7z" fill="rgba(191,90,242,0.8)"/>
+        </svg>
+        <div class="npb-art-spin"></div>
+      </div>
+      <div class="npb-info" id="npb-info">
+        <div class="npb-title" id="npb-title">–</div>
+        <div class="npb-artist" id="npb-artist">–</div>
+      </div>
+      <div class="npb-controls">
+        <button class="npb-btn" id="prev-btn">
+          <svg viewBox="0 0 24 24" fill="currentColor"><path d="M6 6h2v12H6zm3.5 6l8.5 6V6z"/></svg>
+        </button>
+        <button class="npb-btn npb-play" id="play-btn">
+          <svg viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>
+        </button>
+        <button class="npb-btn" id="next-btn">
+          <svg viewBox="0 0 24 24" fill="currentColor"><path d="M6 18l8.5-6L6 6v12zM16 6v12h2V6h-2z"/></svg>
+        </button>
+      </div>
+    </div>
+    <!-- second row: shuffle | volume slider | repeat -->
+    <div class="npb-row npb-row-sub">
+      <button class="npb-sub-btn" id="npb-shuffle-btn" title="Shuffle">
+        <svg viewBox="0 0 24 24" fill="currentColor"><path d="M10.59 9.17L5.41 4 4 5.41l5.17 5.17 1.42-1.41zM14.5 4l2.04 2.04L4 18.59 5.41 20 17.96 7.46 20 9.5V4h-5.5zm.33 9.41l-1.41 1.41 3.13 3.13L14.5 20H20v-5.5l-2.04 2.04-3.13-3.13z"/></svg>
+      </button>
+      <div class="npb-vol-wrap">
+        <svg class="npb-vol-icon" viewBox="0 0 24 24" fill="currentColor"><path d="M7 9v6h4l5 5V4l-5 5H7z"/></svg>
+        <input type="range" id="npb-volume" class="npb-vol-slider" min="0" max="100" value="80" />
+        <svg class="npb-vol-icon" viewBox="0 0 24 24" fill="currentColor"><path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02zM14 3.23v2.06c2.89.86 5 3.54 5 6.71s-2.11 5.85-5 6.71v2.06c4.01-.91 7-4.49 7-8.77s-2.99-7.86-7-8.77z"/></svg>
+      </div>
+      <button class="npb-sub-btn" id="npb-repeat-btn" title="Repeat">
+        <svg viewBox="0 0 24 24" fill="currentColor"><path d="M7 7h10v3l4-4-4-4v3H5v6h2V7zm10 10H7v-3l-4 4 4 4v-3h12v-6h-2v4z"/></svg>
+      </button>
+    </div>
+  </div>
+
+  <!-- ── FULL PLAYER OVERLAY (tap mini player) ── -->
+  <div class="full-player-overlay" id="full-player-overlay">
+    <div class="fpo-bg" id="fpo-bg"></div>
+    <!-- Drag handle (iOS sheet indicator) -->
+    <div class="fpo-drag-handle"></div>
+    <button class="fpo-close" id="fpo-close">
+      <svg viewBox="0 0 24 24" fill="currentColor"><path d="M7.41 15.41L12 10.83l4.59 4.58L18 14l-6-6-6 6z"/></svg>
+    </button>
+    <div class="fpo-content">
+      <div class="fpo-art-wrap">
+        <div class="fpo-art" id="fpo-art">
+          <svg viewBox="0 0 120 120" fill="none">
+            <circle cx="60" cy="60" r="56" stroke="rgba(191,90,242,0.4)" stroke-width="2"/>
+            <path d="M48 38v44l32-22-32-22z" fill="rgba(191,90,242,0.7)"/>
+          </svg>
+          <div class="fpo-vinyl"></div>
+        </div>
+        <div class="fpo-art-glow" id="fpo-art-glow"></div>
+      </div>
+      <div class="fpo-meta">
+        <h2 class="fpo-title" id="fpo-title">–</h2>
+        <p class="fpo-artist" id="fpo-artist">–</p>
+      </div>
+      <div class="fpo-progress-wrap">
+        <div class="fpo-progress-bar" id="fpo-progress-bar">
+          <div class="fpo-progress-fill" id="fpo-progress-fill"></div>
+          <div class="fpo-progress-thumb" id="fpo-progress-thumb"></div>
+        </div>
+        <div class="fpo-times">
+          <span id="fpo-elapsed">0:00</span>
+          <span id="fpo-duration">0:00</span>
+        </div>
+      </div>
+      <div class="fpo-controls">
+        <button class="fpo-ctrl-btn fpo-secondary" id="fpo-shuffle-btn">
+          <svg viewBox="0 0 24 24" fill="currentColor"><path d="M10.59 9.17L5.41 4 4 5.41l5.17 5.17 1.42-1.41zM14.5 4l2.04 2.04L4 18.59 5.41 20 17.96 7.46 20 9.5V4h-5.5zm.33 9.41l-1.41 1.41 3.13 3.13L14.5 20H20v-5.5l-2.04 2.04-3.13-3.13z"/></svg>
+        </button>
+        <button class="fpo-ctrl-btn" id="fpo-prev-btn">
+          <svg viewBox="0 0 24 24" fill="currentColor"><path d="M6 6h2v12H6zm3.5 6l8.5 6V6z"/></svg>
+        </button>
+        <button class="fpo-ctrl-btn fpo-play-big" id="fpo-play-btn">
+          <svg viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>
+        </button>
+        <button class="fpo-ctrl-btn" id="fpo-next-btn">
+          <svg viewBox="0 0 24 24" fill="currentColor"><path d="M6 18l8.5-6L6 6v12zM16 6v12h2V6h-2z"/></svg>
+        </button>
+        <button class="fpo-ctrl-btn fpo-secondary" id="fpo-repeat-btn">
+          <svg viewBox="0 0 24 24" fill="currentColor"><path d="M7 7h10v3l4-4-4-4v3H5v6h2V7zm10 10H7v-3l-4 4 4 4v-3h12v-6h-2v4z"/></svg>
+        </button>
+      </div>
+      <div class="fpo-volume-wrap">
+        <svg class="fpo-vol-icon" viewBox="0 0 24 24" fill="currentColor"><path d="M7 9v6h4l5 5V4l-5 5H7z"/></svg>
+        <input type="range" id="volume-slider" class="fpo-slider" min="0" max="100" value="80" />
+        <svg class="fpo-vol-icon" viewBox="0 0 24 24" fill="currentColor"><path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02zM14 3.23v2.06c2.89.86 5 3.54 5 6.71s-2.11 5.85-5 6.71v2.06c4.01-.91 7-4.49 7-8.77s-2.99-7.86-7-8.77z"/></svg>
+      </div>
+    </div>
+  </div>
+
+</div><!-- /.screen#screen-player -->
+
+<audio id="audio-player" preload="none"></audio>
+<script src="/static/script.js"></script>
+</body>
+</html>
