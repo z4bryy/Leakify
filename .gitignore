@@ -19,3 +19,6 @@ Thumbs.db
 # Env / secrets
 .env
 *.env
+
+# Upload utility (local only)
+upload_to_supabase.py

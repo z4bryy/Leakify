@@ -6,8 +6,31 @@ import os
 import hmac
 import secrets
 
-# Vercel does NOT pull Git LFS objects — serve audio from GitHub's LFS CDN instead.
-# Set AUDIO_BASE_URL env var to override (e.g. for a different CDN).
+# Load .env in local dev (no python-dotenv needed)
+_env_path = os.path.join(os.path.dirname(__file__), '.env')
+if os.path.exists(_env_path):
+    with open(_env_path) as _f:
+        for _line in _f:
+            _line = _line.strip()
+            if _line and not _line.startswith('#') and '=' in _line:
+                _k, _v = _line.split('=', 1)
+                os.environ.setdefault(_k.strip(), _v.strip())
+
+# Supabase Storage (primary audio source when env vars are set)
+SUPABASE_URL    = os.environ.get('SUPABASE_URL', '')
+SUPABASE_KEY    = os.environ.get('SUPABASE_SERVICE_KEY', '')
+SUPABASE_BUCKET = os.environ.get('SUPABASE_BUCKET', 'JuiceWrld')
+SUPABASE_SIGNED_URL_TTL = 3600  # 1 hour
+
+supabase_client = None
+if SUPABASE_URL and SUPABASE_KEY:
+    try:
+        from supabase import create_client
+        supabase_client = create_client(SUPABASE_URL, SUPABASE_KEY)
+    except ImportError:
+        pass  # supabase package not installed — fall back to GitHub LFS
+
+# Vercel fallback (GitHub LFS CDN) — used only if Supabase is not configured.
 IS_VERCEL = bool(os.environ.get('VERCEL'))
 GITHUB_LFS_BASE = os.environ.get(
     'AUDIO_BASE_URL',
@@ -115,23 +138,128 @@ def service_worker():
 @require_auth
 def get_songs():
     """Get all songs from the music library with smart deduplication.
-    
-    For JuiceWrld (which has subfolders with overlapping content), we keep
-    only the highest-priority version of each track.
+
+    In Supabase mode: list files recursively from the bucket and generate
+    1-hour signed URLs.  Artist is derived from the top-level folder in the
+    bucket path; root-level files (no folder) are assigned to 'JuiceWrld'.
+
+    In local/fallback mode: scan Leakify-music-src/ on disk (original logic).
     Priority: Remasters(4) > LEAKED(3) > Session Edits(2) > Extras(1) > root(0)
     """
 
-    # Subfolder priority & tag mapping (case-insensitive key match)
     SUBFOLDER_PRIORITY = {
         'remasters':     (4, 'REMASTER'),
         'leaked':        (3, 'LEAKED'),
         'session edits': (2, 'SESSION'),
         'extras':        (1, 'EXTRA'),
     }
+    AUDIO_EXTS = {'.mp3', '.m4a', '.wav', '.flac', '.ogg'}
 
+    # ── Supabase mode ────────────────────────────────────────────────────
+    if supabase_client:
+
+        def list_recursive(prefix=""):
+            """Return flat list of (bucket_path, name) for every audio file."""
+            items = supabase_client.storage.from_(SUPABASE_BUCKET).list(prefix) if prefix \
+                    else supabase_client.storage.from_(SUPABASE_BUCKET).list()
+            results = []
+            for item in items:
+                item_name = item['name']
+                if item_name == '.emptyFolderPlaceholder':
+                    continue
+                full_path = f"{prefix}/{item_name}" if prefix else item_name
+                if item.get('metadata') is None:
+                    # It's a folder — recurse
+                    results.extend(list_recursive(full_path))
+                else:
+                    ext = os.path.splitext(item_name)[1].lower()
+                    if ext in AUDIO_EXTS:
+                        results.append(full_path)
+            return results
+
+        all_paths = list_recursive()
+
+        raw = []
+        for path in all_paths:
+            parts = path.split('/')
+            if len(parts) == 1:
+                # Root-level file → default artist is bucket name (all JuiceWrld)
+                artist    = SUPABASE_BUCKET
+                sub_parts = []
+            else:
+                artist    = parts[0]
+                sub_parts = parts[1:-1]   # subfolders between artist and filename
+
+            filename     = parts[-1]
+            display_name = os.path.splitext(filename)[0]
+            subfolder    = "/".join(sub_parts)
+            sub_key      = sub_parts[0].strip().lower() if sub_parts else ""
+            pri, tag     = SUBFOLDER_PRIORITY.get(sub_key, (0, "LEAKED"))
+
+            raw.append({
+                "display":   display_name,
+                "filename":  path,          # bucket-relative path for signed URL
+                "artist":    artist,
+                "subfolder": subfolder,
+                "tag":       tag,
+                "_priority": pri,
+                "_norm":     display_name.strip().lower(),
+            })
+
+        # Dedup per artist (keep highest-priority version of same track name)
+        by_artist = defaultdict(list)
+        for s in raw:
+            by_artist[s["artist"]].append(s)
+
+        songs = []
+        for artist, tracks in by_artist.items():
+            best = {}
+            for t in tracks:
+                key = t["_norm"]
+                if key not in best or t["_priority"] > best[key]["_priority"]:
+                    best[key] = t
+            for t in sorted(best.values(), key=lambda x: x["display"].lower()):
+                songs.append({
+                    "display":   t["display"],
+                    "filename":  t["filename"],
+                    "artist":    t["artist"],
+                    "subfolder": t["subfolder"],
+                    "tag":       t["tag"],
+                    "url":       "",
+                })
+
+        songs.sort(key=lambda s: (s["artist"].lower(), s["display"].lower()))
+
+        # Batch signed URLs
+        paths = [s["filename"] for s in songs]
+        try:
+            signed = supabase_client.storage.from_(SUPABASE_BUCKET).create_signed_urls(
+                paths, SUPABASE_SIGNED_URL_TTL
+            )
+            url_map = {}
+            for item in signed:
+                p = item.get("path") or item.get("path_token", "")
+                u = item.get("signedURL") or item.get("signedUrl", "")
+                if p:
+                    url_map[p] = u
+            for s in songs:
+                s["url"] = url_map.get(s["filename"], "")
+        except Exception:
+            for s in songs:
+                try:
+                    res = supabase_client.storage.from_(SUPABASE_BUCKET).create_signed_url(
+                        s["filename"], SUPABASE_SIGNED_URL_TTL
+                    )
+                    s["url"] = res.get("signedURL") or res.get("signed_url", "")
+                except Exception:
+                    s["url"] = ""
+
+        return jsonify({"songs": songs, "count": len(songs)})
+
+    # ── Local / GitHub-LFS fallback ──────────────────────────────────────
     raw = []
     for root_dir, dirs, files in os.walk(MUSIC_FOLDER):
-        dirs.sort()  # deterministic traversal
+        dirs.sort()
         for file in sorted(files):
             if not file.lower().endswith('.mp3'):
                 continue
@@ -139,18 +267,11 @@ def get_songs():
             rel_path  = os.path.relpath(full_path, MUSIC_FOLDER).replace("\\", "/")
             parts     = rel_path.split("/")
             artist    = parts[0] if len(parts) >= 1 else "Unsorted"
-
-            # Subfolders are everything between artist and filename
-            sub_parts = parts[1:-1]          # e.g. ["LEAKED"] or ["JuiceWrld extras"] or []
-            subfolder = "/".join(sub_parts)  # "LEAKED" or ""
-
+            sub_parts = parts[1:-1]
+            subfolder = "/".join(sub_parts)
             display_name = os.path.splitext(file)[0]
-
-            # Determine priority & tag
-            # Songs not in a recognized subfolder are still unreleased/leaked content
             sub_key  = sub_parts[0].strip().lower() if sub_parts else ""
             pri, tag = SUBFOLDER_PRIORITY.get(sub_key, (0, "LEAKED"))
-
             raw.append({
                 "display":   display_name,
                 "filename":  rel_path,
@@ -161,23 +282,17 @@ def get_songs():
                 "_norm":     display_name.strip().lower(),
             })
 
-    # ── Deduplication (per artist) ──────────────────────────────────────
-    # For each artist, keep the highest-priority version of each track.
-    # Two tracks are "the same" if their normalised display name matches.
     by_artist = defaultdict(list)
     for s in raw:
         by_artist[s["artist"]].append(s)
 
     songs = []
     for artist, tracks in by_artist.items():
-        # Build a dict: norm_name → best_track
         best = {}
         for t in tracks:
             key = t["_norm"]
             if key not in best or t["_priority"] > best[key]["_priority"]:
                 best[key] = t
-
-        # Sort by display name, then strip internal fields
         for t in sorted(best.values(), key=lambda x: x["display"].lower()):
             if IS_VERCEL:
                 audio_url = f"{GITHUB_LFS_BASE}/{urlquote(t['filename'], safe='/')}"
@@ -192,9 +307,7 @@ def get_songs():
                 "url":       audio_url,
             })
 
-    # Final sort: artist first, then display name
     songs.sort(key=lambda s: (s["artist"].lower(), s["display"].lower()))
-
     return jsonify({"songs": songs, "count": len(songs)})
 
 @app.route('/play/<path:filename>')
