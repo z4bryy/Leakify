@@ -23,12 +23,13 @@ SUPABASE_BUCKET = os.environ.get('SUPABASE_BUCKET', 'JuiceWrld')
 SUPABASE_SIGNED_URL_TTL = 3600  # 1 hour
 
 supabase_client = None
+_supabase_error = None
 if SUPABASE_URL and SUPABASE_KEY:
     try:
         from supabase import create_client
         supabase_client = create_client(SUPABASE_URL, SUPABASE_KEY)
-    except ImportError:
-        pass  # supabase package not installed — fall back to GitHub LFS
+    except Exception as e:
+        _supabase_error = str(e)  # log reason, fall back to GitHub LFS / local
 
 # Vercel fallback (GitHub LFS CDN) — used only if Supabase is not configured.
 IS_VERCEL = bool(os.environ.get('VERCEL'))
@@ -124,6 +125,30 @@ def login():
         return jsonify({'ok': True})
     return jsonify({'ok': False}), 401
 
+
+@app.route('/api/debug')
+@require_auth
+def debug_info():
+    """Shows server config state for debugging (auth required)."""
+    import sys
+    supabase_ver = None
+    try:
+        import supabase as _sb
+        supabase_ver = getattr(_sb, '__version__', 'unknown')
+    except ImportError:
+        pass
+    return jsonify({
+        'supabase_client': supabase_client is not None,
+        'supabase_error':  _supabase_error,
+        'supabase_version': supabase_ver,
+        'supabase_url_set':  bool(SUPABASE_URL),
+        'supabase_key_set':  bool(SUPABASE_KEY),
+        'supabase_bucket':   SUPABASE_BUCKET,
+        'login_user_set':    bool(os.environ.get('LOGIN_USER')),
+        'login_pass_set':    bool(os.environ.get('LOGIN_PASS')),
+        'is_vercel':         IS_VERCEL,
+        'python':            sys.version,
+    })
 
 @app.route('/favicon.ico')
 def favicon():
