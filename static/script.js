@@ -216,35 +216,18 @@ if ('serviceWorker' in navigator) {
 //  BOOT — 999 Loader → Login
 // ══════════════════════════════════════════
 window.addEventListener('DOMContentLoaded', () => {
-  // ── 999 Intro Loader ──
-  const loaderBar = $('loader-bar');
-  let loaderPct = 0;
-  const loaderInterval = setInterval(() => {
-    // Fast start, slow finish
-    const step = loaderPct < 60 ? 6 : loaderPct < 85 ? 2.5 : 0.8;
-    loaderPct = Math.min(loaderPct + step, 100);
-    if (loaderBar) loaderBar.style.width = loaderPct + '%';
-    if (loaderPct >= 100) {
-      clearInterval(loaderInterval);
-      // Small pause at 100% then exit
-      setTimeout(() => {
-        if (screenLoader) screenLoader.classList.add('fade-out');
-        setTimeout(() => {
-          showScreen(screenLogin);
-          setupAllEvents();
-          const initVol = (volumeSlider.value || 80) / 100;
-          audio.volume = initVol;
-          npbVolume.value = volumeSlider.value || 80;
-          syncVolumeSliderBg(npbVolume);
-          syncVolumeSliderBg(volumeSlider);
-        }, 600);
-      }, 350);
-    }
-  }, 28); // ~100 steps * 28ms = 2.8s total
+  setupAllEvents();
+  const initVol = (volumeSlider.value || 80) / 100;
+  audio.volume = initVol;
+  npbVolume.value = volumeSlider.value || 80;
+  syncVolumeSliderBg(npbVolume);
+  syncVolumeSliderBg(volumeSlider);
+  // Boot: play juicewrldloading.mp4 as splash → then show login
+  startVideoScreen(() => showScreen(screenLogin));
 });
 
 function showScreen(el) {
-  [screenLoader, screenLogin, screenVideo, screenPlayer].forEach(s => {
+  [screenLogin, screenVideo, screenPlayer].forEach(s => {
     s.classList.remove('active');
     s.style.display = 'none';
     s.style.opacity = '0';
@@ -274,7 +257,8 @@ function setupLoginEvents() {
       });
       const data = await res.json();
       if (data.ok) {
-        setTimeout(() => startVideoScreen(), 300);
+        // Splash video already played — go straight to player
+        setTimeout(() => showPlayer(), 300);
       } else {
         loginError.classList.remove('hidden');
         loginError.textContent = 'Wrong credentials. Try again.';
@@ -293,11 +277,9 @@ function setupLoginEvents() {
 // ══════════════════════════════════════════
 //  VIDEO LOADING SCREEN
 // ══════════════════════════════════════════
-function startVideoScreen() {
+// onComplete: optional callback called when video ends/is skipped
+function startVideoScreen(onComplete) {
   showScreen(screenVideo);
-
-  // Pre-fetch songs while video plays
-  loadLibrary();
 
   // Setup video
   introVideo.currentTime = 0;
@@ -342,13 +324,15 @@ function startVideoScreen() {
 
   function onVideoEnd() {
     cleanup();
-    transitionToPlayer();
+    if (onComplete) onComplete();
+    else transitionToPlayer();
   }
 
   function skipVideo() {
     introVideo.pause();
     cleanup();
-    transitionToPlayer();
+    if (onComplete) onComplete();
+    else transitionToPlayer();
   }
 
   function cleanup() {
@@ -365,7 +349,10 @@ function startVideoScreen() {
       videoLoadBar.style.width = pct + '%';
       if (pct >= 100) {
         clearInterval(ival);
-        setTimeout(transitionToPlayer, 400);
+        setTimeout(() => {
+          if (onComplete) onComplete();
+          else transitionToPlayer();
+        }, 400);
       }
     }, 60);
   }
