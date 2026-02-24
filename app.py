@@ -23,7 +23,7 @@ if os.path.exists(_env_path):
 SUPABASE_URL    = os.environ.get('SUPABASE_URL', '').rstrip('/')
 SUPABASE_KEY    = os.environ.get('SUPABASE_SERVICE_KEY', '')
 SUPABASE_BUCKET = os.environ.get('SUPABASE_BUCKET', 'JuiceWrld')
-SUPABASE_SIGNED_URL_TTL = 3600  # 1 hour
+SUPABASE_SIGNED_URL_TTL = 604800  # 7 days — long TTL prevents expired-URL stalls
 
 USE_SUPABASE = bool(SUPABASE_URL and SUPABASE_KEY)
 
@@ -368,6 +368,20 @@ def get_songs():
 
     songs.sort(key=lambda s: (s["artist"].lower(), s["display"].lower()))
     return jsonify({"songs": songs, "count": len(songs)})
+
+@app.route('/api/song-url')
+@require_auth
+def song_url():
+    """Return a fresh signed URL for a single Supabase file (used for error recovery)."""
+    path = request.args.get('path', '')
+    if not path or not USE_SUPABASE:
+        return jsonify({'error': 'Not available'}), 404
+    try:
+        url_map = _sb_signed_urls([path])
+        url = url_map.get(path, '')
+        return jsonify({'url': url})
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
 
 @app.route('/play/<path:filename>')
 @require_auth

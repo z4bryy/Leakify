@@ -524,17 +524,39 @@ function playSong(idx, skipHistory = false) {
   // Init Web Audio context on first user gesture
   initAudioVisualizer();
 
-  audio.src = song.url || `/play/${encodeURIComponent(song.filename)}`;
-  audio.load();
-  audio.play()
-    .then(() => {
-      isPlaying = true;
-      addToRecent(song);
-      onPlayStart(song);
-    })
-    .catch(err => {
-      console.error('Playback error:', err);
-    });
+  // Show buffering indicator immediately for fast visual feedback
+  const cards = songList.querySelectorAll('.track-card');
+  if (cards[idx]) cards[idx].classList.add('buffering');
+
+  const tryPlay = (url) => {
+    // Do NOT call audio.load() — it forces a full reset and re-buffer from scratch,
+    // causing 20-30s delays. Setting src + play() directly is the correct approach.
+    audio.src = url;
+    audio.play()
+      .then(() => {
+        isPlaying = true;
+        addToRecent(song);
+        onPlayStart(song);
+      })
+      .catch(err => {
+        console.error('Playback error:', err);
+        // If URL may be stale (403/expired), try fetching a fresh one
+        if (song.filename && String(err).includes('AbortError') === false) {
+          fetch(`/api/song-url?path=${encodeURIComponent(song.filename)}`)
+            .then(r => r.ok ? r.json() : null)
+            .then(data => {
+              if (data && data.url) {
+                song.url = data.url;
+                audio.src = data.url;
+                audio.play().catch(() => {});
+              }
+            })
+            .catch(() => {});
+        }
+      });
+  };
+
+  tryPlay(song.url || `/play/${encodeURIComponent(song.filename)}`);
 }
 
 // ── Home vinyl spin helper ──
