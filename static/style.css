@@ -276,7 +276,24 @@ body {
   border-color: var(--purple);
   background: rgba(191,90,242,0.08);
   box-shadow: 0 0 0 3px rgba(191,90,242,0.15);
+  outline: none;
 }
+
+/* Kill the browser's yellow autofill background on Chrome / iOS Safari */
+.input-wrap input:-webkit-autofill,
+.input-wrap input:-webkit-autofill:hover,
+.input-wrap input:-webkit-autofill:focus,
+.input-wrap input:-webkit-autofill:active {
+  -webkit-box-shadow: 0 0 0 1000px #0d0020 inset !important;
+  -webkit-text-fill-color: #ffffff !important;
+  caret-color: var(--purple);
+  border-color: var(--purple) !important;
+  transition: background-color 5000s ease-in-out 0s;
+}
+
+/* Also nuke any global yellow outline on all focusable elements */
+*:focus { outline: none; }
+*:focus-visible { outline: 2px solid rgba(191,90,242,0.6); outline-offset: 2px; }
 
 .login-error {
   font-size: 12px;
