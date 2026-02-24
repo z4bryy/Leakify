@@ -73,6 +73,11 @@ def login():
 def favicon():
     return send_from_directory('static', 'icon-192.png'), 200
 
+@app.route('/apple-touch-icon.png')
+@app.route('/apple-touch-icon-precomposed.png')
+def apple_touch_icon():
+    return send_from_directory('static', 'icon-192.png'), 200
+
 @app.route('/')
 def index():
     return render_template('index.html')
