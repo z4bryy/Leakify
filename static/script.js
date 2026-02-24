@@ -37,8 +37,9 @@ const $  = (id) => document.getElementById(id);
 const $$ = (sel) => document.querySelectorAll(sel);
 
 // ── Element refs ──────────────────────────────
-const audio          = $('audio-player');const screenLoader   = $('screen-loader');const screenLogin    = $('screen-login');
-const screenVideo    = $('screen-video');
+const audio          = $('audio-player');
+const screenLoader   = $('screen-loader');
+const screenLogin    = $('screen-login');
 const screenPlayer   = $('screen-player');
 
 // Login
@@ -47,11 +48,6 @@ const loginUser      = $('login-user');
 const loginPass      = $('login-pass');
 const loginError     = $('login-error');
 const loginBtn       = loginForm.querySelector('.login-btn');
-
-// Video
-const introVideo     = $('intro-video');
-const videoSkipBtn   = $('video-skip-btn');
-const videoLoadBar   = $('video-loading-bar');
 
 // Player
 const searchToggle   = $('search-toggle-btn');
@@ -216,22 +212,18 @@ if ('serviceWorker' in navigator) {
 //  BOOT — 999 Loader → Login
 // ══════════════════════════════════════════
 window.addEventListener('DOMContentLoaded', () => {
-  // Ensure video screen is visible immediately (safety net for CSS timing)
-  screenVideo.style.display = 'flex';
-  screenVideo.style.opacity = '1';
-
   setupAllEvents();
   const initVol = (volumeSlider.value || 80) / 100;
   audio.volume = initVol;
   npbVolume.value = volumeSlider.value || 80;
   syncVolumeSliderBg(npbVolume);
   syncVolumeSliderBg(volumeSlider);
-  // Boot: play juicewrldloading.mp4 as splash → then show login
-  startVideoScreen(() => showScreen(screenLogin));
+  // Boot: animate CSS 999 loader → show login
+  startLoaderScreen();
 });
 
 function showScreen(el) {
-  [screenLogin, screenVideo, screenPlayer].forEach(s => {
+  [screenLogin, screenPlayer].forEach(s => {
     s.classList.remove('active');
     s.style.display = 'none';
     s.style.opacity = '0';
@@ -279,102 +271,35 @@ function setupLoginEvents() {
 }
 
 // ══════════════════════════════════════════
-//  VIDEO LOADING SCREEN
+//  CSS LOADER SCREEN (replaces video splash)
 // ══════════════════════════════════════════
-// onComplete: optional callback called when video ends/is skipped
-function startVideoScreen(onComplete) {
-  // Only call showScreen if the video screen isn't already displayed
-  // (at boot it's already .active — calling showScreen causes a black flash)
-  if (!screenVideo.classList.contains('active')) {
-    showScreen(screenVideo);
-  }
-
-  // Setup video
-  introVideo.currentTime = 0;
-
-  // Show skip after 1.5s (safety net for any playback issue)
-  let skipTimer = setTimeout(() => {
-    videoSkipBtn.classList.remove('hidden');
-  }, 1500);
-
-  // Loading bar follows video progress
-  introVideo.addEventListener('timeupdate', onVideoProgress);
-  introVideo.addEventListener('ended', onVideoEnd);
-  introVideo.addEventListener('error', onVideoError, { once: true });
-  videoSkipBtn.addEventListener('click', skipVideo, { once: true });
-
-  // Video has muted+autoplay attrs — it will always start.
-  // Unmute it immediately so user hears audio (browsers allow unmuting after interaction-free autoplay)
-  const playPromise = introVideo.play();
-  if (playPromise !== undefined) {
-    playPromise
-      .then(() => {
-        // Autoplay started — unmute
-        introVideo.muted = false;
-        introVideo.volume = 1;
-      })
-      .catch(() => {
-        // Autoplay fully blocked (very rare with muted attr) — show skip immediately
-        clearTimeout(skipTimer);
-        videoSkipBtn.classList.remove('hidden');
-        simulateFakeLoadBar();
+function startLoaderScreen() {
+  screenLoader.classList.add('active');
+  screenLoader.style.display = 'flex';
+  const bar = $('loader-bar');
+  if (bar) {
+    bar.style.width = '0%';
+    bar.style.transition = 'none';
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => {
+        bar.style.transition = 'width 2.2s cubic-bezier(0.4, 0, 0.2, 1)';
+        bar.style.width = '100%';
       });
+    });
   }
-
-  function onVideoError() {
-    // Video failed to load/play — skip immediately without showing black screen
-    clearTimeout(skipTimer);
-    cleanup();
-    if (onComplete) onComplete();
-    else transitionToPlayer();
-  }
-
-  function onVideoProgress() {
-    if (introVideo.duration) {
-      const pct = (introVideo.currentTime / introVideo.duration) * 100;
-      videoLoadBar.style.width = pct + '%';
-    }
-  }
-
-  function onVideoEnd() {
-    cleanup();
-    if (onComplete) onComplete();
-    else transitionToPlayer();
-  }
-
-  function skipVideo() {
-    introVideo.pause();
-    cleanup();
-    if (onComplete) onComplete();
-    else transitionToPlayer();
-  }
-
-  function cleanup() {
-    clearTimeout(skipTimer);
-    introVideo.removeEventListener('timeupdate', onVideoProgress);
-    introVideo.removeEventListener('ended', onVideoEnd);
-    introVideo.removeEventListener('error', onVideoError);
-    videoLoadBar.style.width = '100%';
-  }
-
-  function simulateFakeLoadBar() {
-    let pct = 0;
-    const ival = setInterval(() => {
-      pct += 2;
-      videoLoadBar.style.width = pct + '%';
-      if (pct >= 100) {
-        clearInterval(ival);
-        setTimeout(() => {
-          if (onComplete) onComplete();
-          else transitionToPlayer();
-        }, 400);
-      }
-    }, 60);
-  }
+  setTimeout(() => {
+    screenLoader.classList.add('fade-out');
+    setTimeout(() => {
+      screenLoader.classList.remove('active', 'fade-out');
+      screenLoader.style.display = 'none';
+      showScreen(screenLogin);
+    }, 600);
+  }, 2600);
 }
 
-function transitionToPlayer() {
-  showPlayer();
+// ── (legacy stub — kept to avoid any stray calls) ──
+function startVideoScreen(onComplete) {
+  if (onComplete) onComplete();
 }
 
 // ══════════════════════════════════════════
@@ -395,9 +320,11 @@ async function loadLibrary() {
     allSongs   = data.songs || [];
     buildPills();
     applyFilter();
-    // Update vibe count whenever library loads
+    // Update 999 tab stat counter
     const vibeNum = $('vibe-track-num');
     if (vibeNum) vibeNum.textContent = allSongs.length || '—';
+    // Populate Home tab
+    renderHomeTab();
   } catch (err) {
     console.error('Library load error:', err);
     songList.innerHTML = `<div class="no-songs"><strong>Could not load library</strong>Make sure Flask is running and music files are placed in<br><em>Leakify-music-src/</em></div>`;
@@ -906,7 +833,11 @@ function setupAllEvents() {
         !e.target.closest('.fpo-content') &&
         !e.target.closest('.pills-inner') &&
         !e.target.closest('#screen-loader') &&
-        !e.target.closest('.vibe-grid')) {
+        !e.target.closest('.vibe-grid') &&
+        !e.target.closest('.artist-shelf') &&
+        !e.target.closest('.home-preview-list') &&
+        !e.target.closest('#tab-home') &&
+        !e.target.closest('#tab-999')) {
       e.preventDefault();
     }
   }, { passive: false });
@@ -922,48 +853,234 @@ function setupAllEvents() {
 //  BOTTOM NAVIGATION
 // ══════════════════════════════════════════
 function setupBottomNav() {
+  const bnavHome   = $('bnav-home');
   const bnavVault  = $('bnav-vault');
-  const bnavVibe   = $('bnav-vibe');
+  const bnav999    = $('bnav-999');
   const bnavPlayer = $('bnav-player');
+  const tabHome    = $('tab-home');
   const tabVault   = $('tab-vault');
-  const tabVibe    = $('tab-vibe');
-  const btns       = [bnavVault, bnavVibe, bnavPlayer];
-  const heroSection = $('now-playing-hero');
+  const tab999     = $('tab-999');
+  const allBtns    = [bnavHome, bnavVault, bnav999, bnavPlayer];
+
+  function hideAllTabs() {
+    allBtns.forEach(b => b && b.classList.remove('active'));
+    [tabHome, tabVault, tab999].forEach(t => t && t.classList.add('hidden'));
+  }
+
+  function scrollTop() {
+    const pc = $('player-content');
+    if (pc) pc.scrollTo({ top: 0, behavior: 'smooth' });
+  }
 
   function setTab(tab) {
-    // All off
-    btns.forEach(b => b && b.classList.remove('active'));
-    if (tabVault)  tabVault.classList.add('hidden');
-    if (tabVibe)   tabVibe.classList.add('hidden');
-
-    if (tab === 'vault') {
+    hideAllTabs();
+    if (tab === 'home') {
+      bnavHome  && bnavHome.classList.add('active');
+      tabHome   && tabHome.classList.remove('hidden');
+      scrollTop();
+    } else if (tab === 'vault') {
       bnavVault && bnavVault.classList.add('active');
       tabVault  && tabVault.classList.remove('hidden');
-      // Smooth scroll to top
-      const pc = $('player-content');
-      if (pc) pc.scrollTo({ top: 0, behavior: 'smooth' });
-    } else if (tab === 'vibe') {
-      bnavVibe && bnavVibe.classList.add('active');
-      tabVibe  && tabVibe.classList.remove('hidden');
+      scrollTop();
+    } else if (tab === '999') {
+      bnav999   && bnav999.classList.add('active');
+      tab999    && tab999.classList.remove('hidden');
       // Update stat counter
       const vibeNum = $('vibe-track-num');
       if (vibeNum && allSongs.length > 0) vibeNum.textContent = allSongs.length;
-      // Scroll to top
-      const pc = $('player-content');
-      if (pc) pc.scrollTo({ top: 0, behavior: 'smooth' });
+      scrollTop();
     } else if (tab === 'player') {
-      // Opens FPO if a song is active, else go to vault
+      // Opens FPO if a song is active, else fall back to vault
       bnavVault && bnavVault.classList.add('active');
       tabVault  && tabVault.classList.remove('hidden');
-      if (isPlaying || audio.src) {
+      if (isPlaying || (audio.src && audio.src !== window.location.href)) {
         openFPO();
       }
     }
   }
 
+  bnavHome   && bnavHome.addEventListener('click',   () => setTab('home'));
   bnavVault  && bnavVault.addEventListener('click',  () => setTab('vault'));
-  bnavVibe   && bnavVibe.addEventListener('click',   () => setTab('vibe'));
+  bnav999    && bnav999.addEventListener('click',    () => setTab('999'));
   bnavPlayer && bnavPlayer.addEventListener('click', () => setTab('player'));
+
+  // Default tab on load: home
+  setTab('home');
+}
+
+// ══════════════════════════════════════════
+//  HOME TAB RENDERING
+// ══════════════════════════════════════════
+function renderHomeTab() {
+  // ── Stat: total tracks ──
+  const statTracks = $('home-stat-tracks');
+  if (statTracks) statTracks.textContent = allSongs.length || '0';
+
+  // ── Artist card counts ──
+  const artistMap = {
+    'JuiceWrld':      'ac-JuiceWrld',
+    'Destroy Lonely': 'ac-DestroyLonely',
+    'Ken Carson':     'ac-KenCarson',
+    'EsdeeKid':       'ac-EsdeeKid',
+    'D4vd':           'ac-D4vd',
+  };
+  Object.entries(artistMap).forEach(([artist, id]) => {
+    const el = $(id);
+    if (!el) return;
+    const n = allSongs.filter(s => s.artist === artist).length;
+    el.textContent = n ? `${n} tracks` : '0 tracks';
+  });
+
+  // ── Category card counts ──
+  const tagMap = {
+    'leaked':  'cc-LEAKED',
+    'session': 'cc-SESSION',
+    'remaster':'cc-REMASTER',
+    'extra':   'cc-EXTRA',
+  };
+  Object.entries(tagMap).forEach(([tag, id]) => {
+    const el = $(id);
+    if (!el) return;
+    const n = allSongs.filter(s => s.tag && s.tag.toLowerCase() === tag).length;
+    el.textContent = n ? `${n} tracks` : '—';
+  });
+
+  // ── Artist card clicks → vault filtered by artist ──
+  document.querySelectorAll('.artist-card[data-artist]').forEach(card => {
+    card.addEventListener('click', () => {
+      switchToVaultAndFilter(card.dataset.artist, null);
+    });
+  });
+
+  // ── Category card clicks → vault filtered by tag ──
+  document.querySelectorAll('.category-card[data-filter]').forEach(card => {
+    card.addEventListener('click', () => {
+      switchToVaultAndFilter(null, card.dataset.filter.toLowerCase());
+    });
+  });
+
+  // ── "See all" buttons ──
+  document.querySelectorAll('.home-see-all[data-filter]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      switchToVaultAndFilter(null, btn.dataset.filter.toLowerCase());
+    });
+  });
+
+  // ── Hero: play all & shuffle ──
+  const playAllBtn = $('home-play-all-btn');
+  const shuffleBtn = $('home-shuffle-all-btn');
+  if (playAllBtn) {
+    playAllBtn.addEventListener('click', () => {
+      if (allSongs.length) {
+        filteredSongs = [...allSongs];
+        playSong(0);
+        switchToVaultAndFilter('all', null);
+      }
+    });
+  }
+  if (shuffleBtn) {
+    shuffleBtn.addEventListener('click', () => {
+      if (allSongs.length) {
+        filteredSongs = [...allSongs];
+        shuffle = true;
+        const fpoShuffleBtn = $('fpo-shuffle-btn');
+        const npbShuffleBtn = $('npb-shuffle-btn');
+        if (fpoShuffleBtn) fpoShuffleBtn.classList.add('active');
+        if (npbShuffleBtn) npbShuffleBtn.classList.add('active');
+        const idx = Math.floor(Math.random() * allSongs.length);
+        playSong(idx);
+        switchToVaultAndFilter('all', null);
+      }
+    });
+  }
+
+  // ── Home preview lists ──
+  renderHomePreviewList('home-leaked-list', 'leaked', 5);
+  renderHomePreviewList('home-session-list', 'session', 5);
+}
+
+/** Render a short preview list for the Home tab */
+function renderHomePreviewList(containerId, tag, limit) {
+  const container = $(containerId);
+  if (!container) return;
+  const songs = allSongs.filter(s => s.tag && s.tag.toLowerCase() === tag).slice(0, limit);
+
+  if (!songs.length) {
+    container.innerHTML = `<div class="home-preview-empty">No ${tag} tracks found</div>`;
+    return;
+  }
+
+  container.innerHTML = '';
+  songs.forEach((song, i) => {
+    const row = document.createElement('div');
+    row.className = 'home-preview-song';
+    row.style.animationDelay = `${i * 0.06}s`;
+    row.innerHTML = `
+      <span class="hps-num">${i + 1}</span>
+      <div class="hps-art">
+        <svg viewBox="0 0 24 24" fill="none">
+          <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="1.5" opacity="0.4"/>
+          <path d="M10 8l6 4-6 4V8z" fill="currentColor"/>
+        </svg>
+      </div>
+      <div class="hps-info">
+        <div class="hps-name">${escHtml(song.display)}</div>
+        <div class="hps-sub">${escHtml(song.artist)}${song.subfolder ? ' · ' + escHtml(song.subfolder) : ''}</div>
+      </div>
+      ${song.tag ? `<span class="track-tag track-tag-${song.tag} hps-tag">${song.tag}</span>` : ''}
+      <button class="hps-play" aria-label="Play">
+        <svg viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>
+      </button>
+    `;
+    row.addEventListener('click', () => {
+      // Add song to filteredSongs and play
+      filteredSongs = allSongs.filter(s => s.tag && s.tag.toLowerCase() === tag);
+      const idx = filteredSongs.findIndex(s => s.filename === song.filename);
+      playSong(idx >= 0 ? idx : 0);
+    });
+    container.appendChild(row);
+  });
+}
+
+/** Switch to vault tab and optionally filter by artist or tag */
+function switchToVaultAndFilter(artist, tag) {
+  const bnavVault = $('bnav-vault');
+  const tabHome   = $('tab-home');
+  const tabVault  = $('tab-vault');
+  const bnav999   = $('bnav-999');
+  const tab999    = $('tab-999');
+  const bnavHome  = $('bnav-home');
+
+  // Switch UI to vault
+  [bnavHome, bnavVault, bnav999].forEach(b => b && b.classList.remove('active'));
+  [tabHome, tab999].forEach(t => t && t.classList.add('hidden'));
+  bnavVault && bnavVault.classList.add('active');
+  tabVault  && tabVault.classList.remove('hidden');
+
+  if (artist && artist !== 'all') {
+    // Click the matching artist pill
+    const pills = document.querySelectorAll('#pills-inner .pill');
+    pills.forEach(p => {
+      p.classList.remove('active');
+      if (p.dataset.artist === artist) p.classList.add('active');
+    });
+  } else if (tag) {
+    // Reset to "all" pill and set search to the tag keyword
+    const allPill = document.querySelector('#pills-inner .pill[data-artist="all"]');
+    if (allPill) {
+      document.querySelectorAll('#pills-inner .pill').forEach(p => p.classList.remove('active'));
+      allPill.classList.add('active');
+    }
+    const searchInput = $('search-input');
+    if (searchInput) {
+      searchInput.value = tag;
+      const searchClear = $('search-clear');
+      if (searchClear) searchClear.classList.remove('hidden');
+    }
+  }
+  applyFilter();
+  const pc = $('player-content');
+  if (pc) pc.scrollTo({ top: 0, behavior: 'smooth' });
 }
 
 // ══════════════════════════════════════════

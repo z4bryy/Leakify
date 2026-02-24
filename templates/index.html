@@ -10,24 +10,33 @@
   <meta name="theme-color" content="#030005" />
   <meta name="format-detection" content="telephone=no" />
   <link rel="apple-touch-icon" href="/static/icon-192.png" />
-  <!-- iOS splash screens -->
   <link rel="apple-touch-startup-image" href="/static/icon-512.png" />
   <link rel="manifest" href="/static/manifest.json" />
   <title>Leakify</title>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=Bebas+Neue&family=Permanent+Marker&display=swap" rel="stylesheet" />
-  <!-- Extra iOS splash screens for all device sizes -->
-  <link rel="apple-touch-startup-image" media="(device-width:390px)and(device-height:844px)and(-webkit-device-pixel-ratio:3)" href="/static/icon-512.png" />
-  <link rel="apple-touch-startup-image" media="(device-width:430px)and(device-height:932px)and(-webkit-device-pixel-ratio:3)" href="/static/icon-512.png" />
-  <link rel="apple-touch-startup-image" media="(device-width:375px)and(device-height:812px)and(-webkit-device-pixel-ratio:3)" href="/static/icon-512.png" />
-  <meta name="apple-touch-fullscreen" content="yes" />
   <link rel="stylesheet" href="/static/style.css" />
 </head>
 <body>
 
-<!-- ═══════════ PARTICLES CANVAS ═══════════ -->
 <canvas id="particles-canvas"></canvas>
+
+<!-- ═══════════════ SPLASH LOADER ═══════════════ -->
+<div id="screen-loader" class="screen active">
+  <div class="loader-bg-glow"></div>
+  <div class="loader-content">
+    <div class="loader-999-wrap">
+      <div class="loader-ring loader-ring-1"></div>
+      <div class="loader-ring loader-ring-2"></div>
+      <div class="loader-ring loader-ring-3"></div>
+      <span class="loader-999-text">999</span>
+    </div>
+    <div class="loader-brand">LEAKIFY</div>
+    <div class="loader-tag">Private Vault · Unreleased</div>
+    <div class="loader-bar-wrap"><div class="loader-bar" id="loader-bar"></div></div>
+  </div>
+</div>
 
 <!-- ═══════════════ LOGIN SCREEN ═══════════════ -->
 <div id="screen-login" class="screen">
@@ -74,36 +83,22 @@
   </div>
 </div>
 
-<!-- ═══════════════ VIDEO / SPLASH SCREEN ═══════════════ -->
-<div id="screen-video" class="screen active" style="display:flex;opacity:1;">
-  <video id="intro-video" playsinline webkit-playsinline muted autoplay preload="auto" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;z-index:1;">
-    <source src="/video/juicewrldloading.mp4" type="video/mp4" />
-  </video>
-  <div class="video-overlay">
-    <div class="video-logo">
-      <span class="video-logo-text">LEAKIFY</span>
-      <div class="video-logo-bar"></div>
-    </div>
-    <div class="video-loading-bar-wrap">
-      <div class="video-loading-bar" id="video-loading-bar"></div>
-    </div>
-    <button id="video-skip-btn" class="video-skip-btn hidden">TAP TO SKIP</button>
-  </div>
-</div>
-
 <!-- ═══════════════ PLAYER SCREEN ═══════════════ -->
 <div id="screen-player" class="screen">
 
-  <!-- Background aurora layers -->
   <div class="aurora-layer aurora-1"></div>
   <div class="aurora-layer aurora-2"></div>
   <div class="aurora-layer aurora-3"></div>
   <div class="aurora-layer aurora-4"></div>
 
-  <!-- ── TOP HEADER ── -->
   <header class="player-header">
     <div class="header-left">
-      <div class="header-logo">L</div>
+      <div class="header-logo">
+        <svg viewBox="0 0 24 24" fill="none" width="18" height="18">
+          <circle cx="12" cy="12" r="10" stroke="white" stroke-width="1.5"/>
+          <path d="M10 8.5v7l5.5-3.5L10 8.5z" fill="white"/>
+        </svg>
+      </div>
       <span class="header-title">LEAKIFY</span>
     </div>
     <div class="header-actions">
@@ -113,14 +108,13 @@
       <button class="icon-btn" id="refresh-btn" title="Refresh">
         <svg viewBox="0 0 24 24" fill="currentColor"><path d="M17.65 6.35C16.2 4.9 14.21 4 12 4c-4.42 0-7.99 3.58-7.99 8s3.57 8 7.99 8c3.73 0 6.84-2.55 7.73-6h-2.08c-.82 2.33-3.04 4-5.65 4-3.31 0-6-2.69-6-6s2.69-6 6-6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35z"/></svg>
       </button>
-      <button class="icon-btn" id="update-btn" title="Aktualizovat aplikaci">
+      <button class="icon-btn" id="update-btn" title="Update">
         <svg viewBox="0 0 24 24" fill="currentColor"><path d="M20 18H4v-2h16v2zm-8-4l-6-6h4V4h4v4h4l-6 6z"/></svg>
       </button>
     </div>
   </header>
   <div id="update-toast" class="update-toast hidden"></div>
 
-  <!-- ── SEARCH BAR (collapsible) ── -->
   <div class="search-bar-wrap" id="search-bar-wrap">
     <div class="search-bar-inner">
       <svg class="sb-icon" viewBox="0 0 24 24" fill="currentColor"><path d="M15.5 14h-.79l-.28-.27C15.41 12.59 16 11.11 16 9.5 16 5.91 13.09 3 9.5 3S3 5.91 3 9.5 5.91 16 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/></svg>
@@ -129,130 +123,271 @@
     </div>
   </div>
 
-  <!-- ── ARTIST FILTER PILLS ── -->
-  <div class="pills-wrap" id="pills-wrap">
-    <div class="pills-inner" id="pills-inner">
-      <button class="pill active" data-artist="all">All</button>
-      <!-- dynamic artist pills injected here -->
-    </div>
-  </div>
-
-  <!-- ── SCROLLABLE CONTENT ── -->
   <main class="player-content" id="player-content">
 
-    <!-- ░░ TAB: VAULT (library) ░░ -->
-    <div id="tab-vault" class="tab-panel">
-
-    <!-- NOW PLAYING HERO -->
-    <section class="now-playing-hero" id="now-playing-hero">
-      <div class="hero-art-wrap">
-        <div class="hero-art" id="hero-art">
-          <div class="hero-art-inner">
-            <svg viewBox="0 0 80 80" fill="none">
-              <circle cx="40" cy="40" r="38" stroke="rgba(191,90,242,0.4)" stroke-width="1.5"/>
-              <path d="M32 26v28l22-14-22-14z" fill="rgba(191,90,242,0.7)"/>
-            </svg>
+    <!-- ░░░ TAB: HOME ░░░ -->
+    <div id="tab-home" class="tab-panel">
+      <div class="home-hero">
+        <div class="home-hero-bg"></div>
+        <div class="home-hero-orb home-hero-orb-1"></div>
+        <div class="home-hero-orb home-hero-orb-2"></div>
+        <div class="home-hero-inner">
+          <div class="home-hero-eyebrow"><span class="home-live-dot"></span>PRIVATE VAULT</div>
+          <h1 class="home-hero-title">JuiceWRLD<br>Collection</h1>
+          <p class="home-hero-sub">Unreleased · Leaked · Remasters</p>
+          <div class="home-hero-actions">
+            <button class="home-hero-play-btn" id="home-play-all-btn">
+              <svg viewBox="0 0 24 24" fill="currentColor" width="18" height="18"><path d="M8 5v14l11-7z"/></svg>Play All
+            </button>
+            <button class="home-hero-shuffle-btn" id="home-shuffle-all-btn">
+              <svg viewBox="0 0 24 24" fill="currentColor" width="16" height="16"><path d="M10.59 9.17L5.41 4 4 5.41l5.17 5.17 1.42-1.41zM14.5 4l2.04 2.04L4 18.59 5.41 20 17.96 7.46 20 9.5V4h-5.5zm.33 9.41l-1.41 1.41 3.13 3.13L14.5 20H20v-5.5l-2.04 2.04-3.13-3.13z"/></svg>Shuffle
+            </button>
           </div>
-          <div class="hero-art-vinyl"></div>
+          <div class="home-hero-stats">
+            <div class="home-stat"><span class="home-stat-num" id="home-stat-tracks">—</span><span class="home-stat-label">Tracks</span></div>
+            <div class="home-stat-div"></div>
+            <div class="home-stat"><span class="home-stat-num">5</span><span class="home-stat-label">Artists</span></div>
+            <div class="home-stat-div"></div>
+            <div class="home-stat"><span class="home-stat-num">999</span><span class="home-stat-label">Forever</span></div>
+          </div>
         </div>
-        <div class="hero-glow" id="hero-glow"></div>
-      </div>
-      <div class="hero-text">
-        <div class="hero-badge">NOW PLAYING</div>
-        <h2 class="hero-track-name" id="hero-track-name">Select a Track</h2>
-        <p class="hero-artist-name" id="hero-artist-name">Tap any song below</p>
-        <div class="hero-eq" id="hero-eq">
-          <span></span><span></span><span></span><span></span><span></span>
+        <div class="home-hero-vinyl-wrap">
+          <div class="home-hero-vinyl" id="home-hero-vinyl">
+            <div class="home-vinyl-ring-1"></div>
+            <div class="home-vinyl-ring-2"></div>
+            <div class="home-vinyl-center">
+              <svg viewBox="0 0 60 60" fill="none" width="32" height="32">
+                <circle cx="30" cy="30" r="28" stroke="rgba(191,90,242,0.5)" stroke-width="1.5"/>
+                <path d="M24 20v20l16-10L24 20z" fill="rgba(217,126,255,0.9)"/>
+              </svg>
+            </div>
+          </div>
         </div>
       </div>
-    </section>
 
-    <!-- TRACK GRID -->
-    <section class="tracks-section">
-      <div class="tracks-header">
-        <h3 class="tracks-heading">Your Library</h3>
-        <span class="tracks-count" id="track-count">— songs</span>
-      </div>
-      <div class="track-grid" id="song-list">
-        <div class="tracks-loading">
-          <div class="spinner"></div>
-          <span>Loading vault…</span>
+      <section class="home-section">
+        <div class="home-section-hdr"><h3 class="home-section-title">Artists</h3></div>
+        <div class="artist-shelf" id="artist-shelf">
+          <div class="artist-card" data-artist="JuiceWrld" style="--ac:#BF5AF2">
+            <div class="artist-card-avatar"><span>JW</span><div class="artist-card-glow"></div></div>
+            <span class="artist-card-name">JuiceWrld</span>
+            <span class="artist-card-count" id="ac-JuiceWrld">—</span>
+          </div>
+          <div class="artist-card" data-artist="Destroy Lonely" style="--ac:#FF375F">
+            <div class="artist-card-avatar"><span>DL</span><div class="artist-card-glow"></div></div>
+            <span class="artist-card-name">Destroy Lonely</span>
+            <span class="artist-card-count" id="ac-DestroyLonely">—</span>
+          </div>
+          <div class="artist-card" data-artist="Ken Carson" style="--ac:#30D158">
+            <div class="artist-card-avatar"><span>KC</span><div class="artist-card-glow"></div></div>
+            <span class="artist-card-name">Ken Carson</span>
+            <span class="artist-card-count" id="ac-KenCarson">—</span>
+          </div>
+          <div class="artist-card" data-artist="EsdeeKid" style="--ac:#0A84FF">
+            <div class="artist-card-avatar"><span>EK</span><div class="artist-card-glow"></div></div>
+            <span class="artist-card-name">EsdeeKid</span>
+            <span class="artist-card-count" id="ac-EsdeeKid">—</span>
+          </div>
+          <div class="artist-card" data-artist="D4vd" style="--ac:#FF9F0A">
+            <div class="artist-card-avatar"><span>D4</span><div class="artist-card-glow"></div></div>
+            <span class="artist-card-name">D4vd</span>
+            <span class="artist-card-count" id="ac-D4vd">—</span>
+          </div>
+        </div>
+      </section>
+
+      <section class="home-section">
+        <div class="home-section-hdr"><h3 class="home-section-title">Browse</h3></div>
+        <div class="category-grid">
+          <div class="category-card" data-filter="LEAKED" style="--cg1:#3b0764;--cg2:#7c3aed">
+            <div class="category-card-icon"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 14.5v-9l6 4.5-6 4.5z"/></svg></div>
+            <span class="category-card-label">LEAKED</span>
+            <span class="category-card-sub" id="cc-LEAKED">—</span>
+          </div>
+          <div class="category-card" data-filter="SESSION" style="--cg1:#064e3b;--cg2:#059669">
+            <div class="category-card-icon"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 3v10.55c-.59-.34-1.27-.55-2-.55-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4V7h4V3h-6z"/></svg></div>
+            <span class="category-card-label">SESSION</span>
+            <span class="category-card-sub" id="cc-SESSION">—</span>
+          </div>
+          <div class="category-card" data-filter="REMASTER" style="--cg1:#1e3a5f;--cg2:#0A84FF">
+            <div class="category-card-icon"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 14.5c-2.49 0-4.5-2.01-4.5-4.5S9.51 7.5 12 7.5s4.5 2.01 4.5 4.5-2.01 4.5-4.5 4.5zm0-5.5c-.55 0-1 .45-1 1s.45 1 1 1 1-.45 1-1-.45-1-1-1z"/></svg></div>
+            <span class="category-card-label">REMASTER</span>
+            <span class="category-card-sub" id="cc-REMASTER">—</span>
+          </div>
+          <div class="category-card" data-filter="EXTRA" style="--cg1:#78350f;--cg2:#FF9F0A">
+            <div class="category-card-icon"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M11.99 2C6.47 2 2 6.48 2 12s4.47 10 9.99 10C17.52 22 22 17.52 22 12S17.52 2 11.99 2zm4.24 16L12 15.45 7.77 18l1.12-4.81-3.73-3.23 4.92-.42L12 5l1.92 4.53 4.92.42-3.73 3.23L16.23 18z"/></svg></div>
+            <span class="category-card-label">EXTRAS</span>
+            <span class="category-card-sub" id="cc-EXTRA">—</span>
+          </div>
+        </div>
+      </section>
+
+      <section class="home-section">
+        <div class="home-section-hdr">
+          <h3 class="home-section-title">Latest Leaks</h3>
+          <button class="home-see-all" data-goto="vault" data-filter="LEAKED">See all</button>
+        </div>
+        <div class="home-preview-list" id="home-leaked-list"></div>
+      </section>
+
+      <section class="home-section">
+        <div class="home-section-hdr">
+          <h3 class="home-section-title">Session Edits</h3>
+          <button class="home-see-all" data-goto="vault" data-filter="SESSION">See all</button>
+        </div>
+        <div class="home-preview-list" id="home-session-list"></div>
+      </section>
+    </div><!-- /#tab-home -->
+
+    <!-- ░░░ TAB: VAULT ░░░ -->
+    <div id="tab-vault" class="tab-panel hidden">
+      <div class="pills-wrap" id="pills-wrap">
+        <div class="pills-inner" id="pills-inner">
+          <button class="pill active" data-artist="all">All</button>
         </div>
       </div>
-    </section>
 
+      <section class="now-playing-hero" id="now-playing-hero">
+        <div class="hero-art-wrap">
+          <div class="hero-art" id="hero-art">
+            <div class="hero-art-inner">
+              <svg viewBox="0 0 80 80" fill="none">
+                <circle cx="40" cy="40" r="38" stroke="rgba(191,90,242,0.4)" stroke-width="1.5"/>
+                <path d="M32 26v28l22-14-22-14z" fill="rgba(191,90,242,0.7)"/>
+              </svg>
+            </div>
+            <div class="hero-art-vinyl"></div>
+          </div>
+          <div class="hero-glow" id="hero-glow"></div>
+        </div>
+        <div class="hero-text">
+          <div class="hero-badge">NOW PLAYING</div>
+          <h2 class="hero-track-name" id="hero-track-name">Select a Track</h2>
+          <p class="hero-artist-name" id="hero-artist-name">Tap any song below</p>
+          <div class="hero-eq" id="hero-eq"><span></span><span></span><span></span><span></span><span></span></div>
+        </div>
+      </section>
+
+      <section class="tracks-section">
+        <div class="tracks-header">
+          <h3 class="tracks-heading">Your Library</h3>
+          <span class="tracks-count" id="track-count">— songs</span>
+        </div>
+        <div class="track-grid" id="song-list">
+          <div class="tracks-loading"><div class="spinner"></div><span>Loading vault…</span></div>
+        </div>
+      </section>
     </div><!-- /#tab-vault -->
 
-    <!-- ░░ TAB: 999 VIBE ░░ -->
-    <div id="tab-vibe" class="tab-panel hidden">
-      <!-- Hero image with quote -->
-      <div class="vibe-hero" id="vibe-hero">
+    <!-- ░░░ TAB: 999 ░░░ -->
+    <div id="tab-999" class="tab-panel hidden">
+
+      <div class="vibe-hero">
         <div class="vibe-hero-img" style="background-image:url('https://images.unsplash.com/photo-1557682224-5b8590cd9ec5?auto=format&fit=crop&w=1200&q=80')"></div>
         <div class="vibe-hero-overlay"></div>
         <div class="vibe-hero-text">
           <span class="vibe-999-badge">999</span>
           <h2 class="vibe-quote">"Legends Never Die"</h2>
-          <p class="vibe-quote-attr">Jarad A. Higgins — JuiceWRLD</p>
+          <p class="vibe-quote-attr">Jarad A. Higgins · Dec 2 1998 – Dec 8 2019</p>
         </div>
       </div>
-      <!-- Aesthetic image grid -->
-      <div class="vibe-grid">
-        <div class="vibe-card vibe-card-lg" style="background-image:url('https://images.unsplash.com/photo-1470770903676-25da8a7c3bfe?auto=format&fit=crop&w=900&q=80')">
-          <div class="vibe-card-overlay"></div>
-          <span class="vibe-card-label">WRLD ON DRUGS</span>
+
+      <div class="bio-block glass">
+        <div class="bio-block-hdr">
+          <span class="bio-badge">BIOGRAPHY</span>
+          <h3 class="bio-title">The Legend of JuiceWRLD</h3>
         </div>
-        <div class="vibe-card" style="background-image:url('https://images.unsplash.com/photo-1579546929518-9e396f3cc809?auto=format&fit=crop&w=600&q=80')">
-          <div class="vibe-card-overlay"></div>
-          <span class="vibe-card-label">LUCID DREAMS</span>
-        </div>
-        <div class="vibe-card" style="background-image:url('https://images.unsplash.com/photo-1535016120720-40c646be5580?auto=format&fit=crop&w=600&q=80')">
-          <div class="vibe-card-overlay"></div>
-          <span class="vibe-card-label">ALL GIRLS ARE THE SAME</span>
-        </div>
-        <div class="vibe-card vibe-card-wide" style="background-image:url('https://images.unsplash.com/photo-1518791841217-8f162f1912da?auto=format&fit=crop&w=1200&q=80')">
-          <div class="vibe-card-overlay"></div>
-          <span class="vibe-card-label">RIGHTEOUS</span>
-        </div>
-        <div class="vibe-card" style="background-image:url('https://images.unsplash.com/photo-1566096650255-98ba53e8b918?auto=format&fit=crop&w=600&q=80')">
-          <div class="vibe-card-overlay"></div>
-          <span class="vibe-card-label">CONVERSATIONS</span>
-        </div>
-        <div class="vibe-card" style="background-image:url('https://images.unsplash.com/photo-1487088678257-3a541e6e3922?auto=format&fit=crop&w=600&q=80')">
-          <div class="vibe-card-overlay"></div>
-          <span class="vibe-card-label">EMPTY</span>
+        <p class="bio-text">Jarad Higgins — known worldwide as JuiceWRLD — was born December 2, 1998 in Chicago, Illinois. A self-taught multi-instrumentalist, he could play piano, guitar, and drums by his teens. He began releasing music on SoundCloud in 2015 and exploded onto the mainstream with <em>"Lucid Dreams"</em> in 2018, which peaked at #2 on the Billboard Hot 100.</p>
+        <p class="bio-text">In just two years at the top, Juice released <em>Goodbye &amp; Good Riddance</em>, <em>Death Race for Love</em>, and collaborated with artists from Future to Ellie Goulding. His free-associative freestyle rap style and emo-trap sound defined a generation. He passed away on December 8, 2019 — but the vault of unreleased music he left behind continues to reveal his genius.</p>
+      </div>
+
+      <div class="vibe-stats" style="padding:0 12px;margin-bottom:20px">
+        <div class="vibe-stat-card glass"><div class="vibe-stat-num">999</div><div class="vibe-stat-label">FOREVER</div></div>
+        <div class="vibe-stat-card glass"><div class="vibe-stat-num" id="vibe-track-num">—</div><div class="vibe-stat-label">LEAKED TRACKS</div></div>
+        <div class="vibe-stat-card glass"><div class="vibe-stat-num">∞</div><div class="vibe-stat-label">UNRELEASED</div></div>
+      </div>
+
+      <div class="timeline-section">
+        <h3 class="timeline-heading">The Legacy</h3>
+        <div class="timeline">
+          <div class="timeline-item">
+            <div class="timeline-year-col"><span class="timeline-year">2015</span></div>
+            <div class="timeline-dot"></div>
+            <div class="timeline-content"><h4>SoundCloud Origins</h4><p>Jarad uploads his first tracks under the name JuiceWRLD, blending emo rock melodies with Chicago drill rap.</p></div>
+          </div>
+          <div class="timeline-item">
+            <div class="timeline-year-col"><span class="timeline-year">2017</span></div>
+            <div class="timeline-dot"></div>
+            <div class="timeline-content"><h4>Interscope Deal</h4><p>"All Girls Are The Same" catches fire. Juice signs with Interscope / Grade A Productions in one of the biggest deals of the year.</p></div>
+          </div>
+          <div class="timeline-item">
+            <div class="timeline-year-col"><span class="timeline-year">2018</span></div>
+            <div class="timeline-dot"></div>
+            <div class="timeline-content"><h4>Lucid Dreams · Top 5</h4><p>Goodbye &amp; Good Riddance drops. "Lucid Dreams" peaks at #2 Billboard Hot 100. JuiceWRLD becomes a global star at age 19.</p></div>
+          </div>
+          <div class="timeline-item">
+            <div class="timeline-year-col"><span class="timeline-year">2019</span></div>
+            <div class="timeline-dot"></div>
+            <div class="timeline-content"><h4>Death Race for Love</h4><p>His second studio album debuts at #1. Juice is nonstop: collaborations, freestyles, hundreds of unreleased sessions.</p></div>
+          </div>
+          <div class="timeline-item">
+            <div class="timeline-year-col"><span class="timeline-year">∞</span></div>
+            <div class="timeline-dot timeline-dot-glow"></div>
+            <div class="timeline-content"><h4>The Vault Lives On</h4><p>Thousands of unreleased recordings. The music never stops. 999 forever.</p></div>
+          </div>
         </div>
       </div>
-      <!-- Stats row -->
-      <div class="vibe-stats">
-        <div class="vibe-stat-card glass">
-          <div class="vibe-stat-num">999</div>
-          <div class="vibe-stat-label">FOREVER</div>
-        </div>
-        <div class="vibe-stat-card glass">
-          <div class="vibe-stat-num" id="vibe-track-num">—</div>
-          <div class="vibe-stat-label">LEAKED TRACKS</div>
-        </div>
-        <div class="vibe-stat-card glass">
-          <div class="vibe-stat-num">∞</div>
-          <div class="vibe-stat-label">UNRELEASED</div>
+
+      <div class="articles-section">
+        <h3 class="articles-heading">Stories</h3>
+        <div class="articles-grid">
+          <div class="article-card glass">
+            <div class="article-card-img" style="background:linear-gradient(135deg,#2d1b69,#8b5cf6,#ec4899)"><span class="article-tag">FREESTYLE</span></div>
+            <div class="article-card-body">
+              <h4 class="article-card-title">The Freestyle King</h4>
+              <p class="article-card-excerpt">Juice could freestyle for hours — entire albums worth of music created in single session bursts. His engineers kept recording everything, knowing nothing should be lost.</p>
+              <span class="article-card-date">999 FOREVER</span>
+            </div>
+          </div>
+          <div class="article-card glass">
+            <div class="article-card-img" style="background:linear-gradient(135deg,#1a1a2e,#16213e,#0f3460)"><span class="article-tag">PRODUCTION</span></div>
+            <div class="article-card-body">
+              <h4 class="article-card-title">The Emo-Trap Blueprint</h4>
+              <p class="article-card-excerpt">Sampling Sting, interpolating The Police — Juice had an ear for melodic pain that connected with millions. His production choices redefined what hip-hop could feel like.</p>
+              <span class="article-card-date">999 FOREVER</span>
+            </div>
+          </div>
+          <div class="article-card glass">
+            <div class="article-card-img" style="background:linear-gradient(135deg,#1f2937,#374151,#6b7280)"><span class="article-tag">LEGACY</span></div>
+            <div class="article-card-body">
+              <h4 class="article-card-title">Generation Z's Kurt Cobain</h4>
+              <p class="article-card-excerpt">Critics have called him the defining voice of his generation — raw, vulnerable, brilliant. The comparison to Cobain is not hyperbole. His pain resonated because it was real.</p>
+              <span class="article-card-date">999 FOREVER</span>
+            </div>
+          </div>
         </div>
       </div>
-      <!-- Quote cards -->
-      <div class="vibe-quotes-wrap">
-        <div class="vibe-q-card glass">
-          <p class="vibe-q-text">"I'm the one, I'm the one, I'm the one — you need. Yeah, I am everything."</p>
-          <span class="vibe-q-song">— All Girls Are The Same</span>
-        </div>
-        <div class="vibe-q-card glass">
-          <p class="vibe-q-text">"I've been going through it, I've been going through it. Nobody can do it, I can see right through it."</p>
-          <span class="vibe-q-song">— Lucid Dreams</span>
-        </div>
-        <div class="vibe-q-card glass">
-          <p class="vibe-q-text">"Legends never die when the world is calling you. Can you hear them screaming out your name?"</p>
-          <span class="vibe-q-song">— Legends</span>
+
+      <div class="lyric-wall">
+        <h3 class="lyric-wall-heading">Lyrics That Hit Different</h3>
+        <div class="lyric-cards">
+          <div class="lyric-card glass"><span class="lyric-open-quote">"</span><p class="lyric-text">I've been going through it, I've been going through it. Nobody can do it, I can see right through it.</p><span class="lyric-source">— Lucid Dreams</span></div>
+          <div class="lyric-card glass"><span class="lyric-open-quote">"</span><p class="lyric-text">Legends never die when the world is calling you. Can you hear them screaming out your name?</p><span class="lyric-source">— Legends</span></div>
+          <div class="lyric-card glass"><span class="lyric-open-quote">"</span><p class="lyric-text">I'm the one, I'm the one, I'm the one you need. Yeah, I am everything you dreamed of.</p><span class="lyric-source">— All Girls Are The Same</span></div>
+          <div class="lyric-card glass"><span class="lyric-open-quote">"</span><p class="lyric-text">I still see your shadows in my room, can't take back the love that I gave you.</p><span class="lyric-source">— Lucid Dreams</span></div>
         </div>
       </div>
-    </div><!-- /#tab-vibe -->
+
+      <div class="vibe-grid" style="padding:0 12px;margin-bottom:24px">
+        <div class="vibe-card vibe-card-lg" style="background-image:url('https://images.unsplash.com/photo-1470770903676-25da8a7c3bfe?auto=format&fit=crop&w=900&q=80')"><div class="vibe-card-overlay"></div><span class="vibe-card-label">WRLD ON DRUGS</span></div>
+        <div class="vibe-card" style="background-image:url('https://images.unsplash.com/photo-1579546929518-9e396f3cc809?auto=format&fit=crop&w=600&q=80')"><div class="vibe-card-overlay"></div><span class="vibe-card-label">LUCID DREAMS</span></div>
+        <div class="vibe-card" style="background-image:url('https://images.unsplash.com/photo-1535016120720-40c646be5580?auto=format&fit=crop&w=600&q=80')"><div class="vibe-card-overlay"></div><span class="vibe-card-label">ALL GIRLS</span></div>
+        <div class="vibe-card vibe-card-wide" style="background-image:url('https://images.unsplash.com/photo-1566096650255-98ba53e8b918?auto=format&fit=crop&w=1200&q=80')"><div class="vibe-card-overlay"></div><span class="vibe-card-label">CONVERSATIONS</span></div>
+        <div class="vibe-card" style="background-image:url('https://images.unsplash.com/photo-1487088678257-3a541e6e3922?auto=format&fit=crop&w=600&q=80')"><div class="vibe-card-overlay"></div><span class="vibe-card-label">EMPTY</span></div>
+        <div class="vibe-card" style="background-image:url('https://images.unsplash.com/photo-1518791841217-8f162f1912da?auto=format&fit=crop&w=600&q=80')"><div class="vibe-card-overlay"></div><span class="vibe-card-label">RIGHTEOUS</span></div>
+      </div>
+
+    </div><!-- /#tab-999 -->
 
   </main>
 
@@ -360,26 +495,27 @@
     </div>
   </div>
 
-  <!-- ── BOTTOM NAVIGATION BAR ── -->
-  <nav class="bottom-nav" id="bottom-nav" aria-label="Main navigation">
-    <button class="bnav-btn active" id="bnav-vault" data-tab="vault" aria-label="Vault">
-      <svg class="bnav-icon" viewBox="0 0 24 24" fill="currentColor"><path d="M4 6h16v2H4zm0 5h16v2H4zm0 5h16v2H4z"/><circle cx="2" cy="7" r="1" fill="currentColor"/><circle cx="2" cy="12" r="1" fill="currentColor"/><circle cx="2" cy="17" r="1" fill="currentColor"/></svg>
-      <span class="bnav-label">Vault</span>
-      <span class="bnav-dot"></span>
+  <!-- ── BOTTOM NAV ── -->
+  <nav class="bottom-nav" id="bottom-nav">
+    <button class="bnav-btn active" id="bnav-home" data-tab="home">
+      <svg class="bnav-icon" viewBox="0 0 24 24" fill="currentColor"><path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/></svg>
+      <span class="bnav-label">Home</span><span class="bnav-dot"></span>
     </button>
-    <button class="bnav-btn" id="bnav-vibe" data-tab="vibe" aria-label="Vibe">
-      <svg class="bnav-icon" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 14.5v-9l6 4.5-6 4.5z"/></svg>
-      <span class="bnav-label">999 Vibe</span>
-      <span class="bnav-dot"></span>
+    <button class="bnav-btn" id="bnav-vault" data-tab="vault">
+      <svg class="bnav-icon" viewBox="0 0 24 24" fill="currentColor"><path d="M20 2H4c-1.1 0-2 .9-2 2v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm-8 12c-2.21 0-4-1.79-4-4s1.79-4 4-4 4 1.79 4 4-1.79 4-4 4zm0-6c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2z"/></svg>
+      <span class="bnav-label">Vault</span><span class="bnav-dot"></span>
     </button>
-    <button class="bnav-btn" id="bnav-player" data-tab="player" aria-label="Now Playing">
+    <button class="bnav-btn" id="bnav-999" data-tab="999">
+      <svg class="bnav-icon" viewBox="0 0 24 24" fill="currentColor"><path d="M11.99 2C6.47 2 2 6.48 2 12s4.47 10 9.99 10C17.52 22 22 17.52 22 12S17.52 2 11.99 2zm4.24 16L12 15.45 7.77 18l1.12-4.81-3.73-3.23 4.92-.42L12 5l1.92 4.53 4.92.42-3.73 3.23L16.23 18z"/></svg>
+      <span class="bnav-label">999</span><span class="bnav-dot"></span>
+    </button>
+    <button class="bnav-btn" id="bnav-player" data-tab="player">
       <svg class="bnav-icon" viewBox="0 0 24 24" fill="currentColor"><path d="M12 3v10.55c-.59-.34-1.27-.55-2-.55-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4V7h4V3h-6z"/></svg>
-      <span class="bnav-label">Playing</span>
-      <span class="bnav-dot"></span>
+      <span class="bnav-label">Playing</span><span class="bnav-dot"></span>
     </button>
   </nav>
 
-</div><!-- /.screen#screen-player -->
+</div><!-- /#screen-player -->
 
 <audio id="audio-player" preload="none"></audio>
 <script src="/static/script.js"></script>
