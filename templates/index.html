@@ -7,7 +7,7 @@
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
   <meta name="apple-mobile-web-app-title" content="Leakify" />
   <meta name="mobile-web-app-capable" content="yes" />
-  <meta name="theme-color" content="#060008" />
+  <meta name="theme-color" content="#030005" />
   <meta name="format-detection" content="telephone=no" />
   <link rel="apple-touch-icon" href="/static/icon-192.png" />
   <!-- iOS splash screens -->
@@ -16,7 +16,12 @@
   <title>Leakify</title>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=Bebas+Neue&family=Permanent+Marker&display=swap" rel="stylesheet" />
+  <!-- Extra iOS splash screens for all device sizes -->
+  <link rel="apple-touch-startup-image" media="(device-width:390px)and(device-height:844px)and(-webkit-device-pixel-ratio:3)" href="/static/icon-512.png" />
+  <link rel="apple-touch-startup-image" media="(device-width:430px)and(device-height:932px)and(-webkit-device-pixel-ratio:3)" href="/static/icon-512.png" />
+  <link rel="apple-touch-startup-image" media="(device-width:375px)and(device-height:812px)and(-webkit-device-pixel-ratio:3)" href="/static/icon-512.png" />
+  <meta name="apple-touch-fullscreen" content="yes" />
   <link rel="stylesheet" href="/static/style.css" />
 </head>
 <body>
@@ -24,8 +29,26 @@
 <!-- ═══════════ PARTICLES CANVAS ═══════════ -->
 <canvas id="particles-canvas"></canvas>
 
+<!-- ═══════════════ 999 LOADER SCREEN ═══════════════ -->
+<div id="screen-loader" class="screen active">
+  <div class="loader-bg-glow"></div>
+  <div class="loader-content">
+    <div class="loader-999-wrap">
+      <div class="loader-ring loader-ring-1"></div>
+      <div class="loader-ring loader-ring-2"></div>
+      <div class="loader-ring loader-ring-3"></div>
+      <span class="loader-999-text">999</span>
+    </div>
+    <p class="loader-brand">LEAKIFY</p>
+    <p class="loader-tag">WRLD ON DRUGS</p>
+    <div class="loader-bar-wrap">
+      <div class="loader-bar" id="loader-bar"></div>
+    </div>
+  </div>
+</div>
+
 <!-- ═══════════════ LOGIN SCREEN ═══════════════ -->
-<div id="screen-login" class="screen active">
+<div id="screen-login" class="screen">
   <div class="login-bg-glow"></div>
   <div class="login-card">
     <div class="login-logo-wrap">
@@ -135,6 +158,9 @@
   <!-- ── SCROLLABLE CONTENT ── -->
   <main class="player-content" id="player-content">
 
+    <!-- ░░ TAB: VAULT (library) ░░ -->
+    <div id="tab-vault" class="tab-panel">
+
     <!-- NOW PLAYING HERO -->
     <section class="now-playing-hero" id="now-playing-hero">
       <div class="hero-art-wrap">
@@ -172,6 +198,80 @@
         </div>
       </div>
     </section>
+
+    </div><!-- /#tab-vault -->
+
+    <!-- ░░ TAB: 999 VIBE ░░ -->
+    <div id="tab-vibe" class="tab-panel hidden">
+      <!-- Hero image with quote -->
+      <div class="vibe-hero" id="vibe-hero">
+        <div class="vibe-hero-img" style="background-image:url('https://images.unsplash.com/photo-1557682224-5b8590cd9ec5?auto=format&fit=crop&w=1200&q=80')"></div>
+        <div class="vibe-hero-overlay"></div>
+        <div class="vibe-hero-text">
+          <span class="vibe-999-badge">999</span>
+          <h2 class="vibe-quote">"Legends Never Die"</h2>
+          <p class="vibe-quote-attr">Jarad A. Higgins — JuiceWRLD</p>
+        </div>
+      </div>
+      <!-- Aesthetic image grid -->
+      <div class="vibe-grid">
+        <div class="vibe-card vibe-card-lg" style="background-image:url('https://images.unsplash.com/photo-1470770903676-25da8a7c3bfe?auto=format&fit=crop&w=900&q=80')">
+          <div class="vibe-card-overlay"></div>
+          <span class="vibe-card-label">WRLD ON DRUGS</span>
+        </div>
+        <div class="vibe-card" style="background-image:url('https://images.unsplash.com/photo-1579546929518-9e396f3cc809?auto=format&fit=crop&w=600&q=80')">
+          <div class="vibe-card-overlay"></div>
+          <span class="vibe-card-label">LUCID DREAMS</span>
+        </div>
+        <div class="vibe-card" style="background-image:url('https://images.unsplash.com/photo-1535016120720-40c646be5580?auto=format&fit=crop&w=600&q=80')">
+          <div class="vibe-card-overlay"></div>
+          <span class="vibe-card-label">ALL GIRLS ARE THE SAME</span>
+        </div>
+        <div class="vibe-card vibe-card-wide" style="background-image:url('https://images.unsplash.com/photo-1518791841217-8f162f1912da?auto=format&fit=crop&w=1200&q=80')">
+          <div class="vibe-card-overlay"></div>
+          <span class="vibe-card-label">RIGHTEOUS</span>
+        </div>
+        <div class="vibe-card" style="background-image:url('https://images.unsplash.com/photo-1566096650255-98ba53e8b918?auto=format&fit=crop&w=600&q=80')">
+          <div class="vibe-card-overlay"></div>
+          <span class="vibe-card-label">CONVERSATIONS</span>
+        </div>
+        <div class="vibe-card" style="background-image:url('https://images.unsplash.com/photo-1487088678257-3a541e6e3922?auto=format&fit=crop&w=600&q=80')">
+          <div class="vibe-card-overlay"></div>
+          <span class="vibe-card-label">EMPTY</span>
+        </div>
+      </div>
+      <!-- Stats row -->
+      <div class="vibe-stats">
+        <div class="vibe-stat-card glass">
+          <div class="vibe-stat-num">999</div>
+          <div class="vibe-stat-label">FOREVER</div>
+        </div>
+        <div class="vibe-stat-card glass">
+          <div class="vibe-stat-num" id="vibe-track-num">—</div>
+          <div class="vibe-stat-label">LEAKED TRACKS</div>
+        </div>
+        <div class="vibe-stat-card glass">
+          <div class="vibe-stat-num">∞</div>
+          <div class="vibe-stat-label">UNRELEASED</div>
+        </div>
+      </div>
+      <!-- Quote cards -->
+      <div class="vibe-quotes-wrap">
+        <div class="vibe-q-card glass">
+          <p class="vibe-q-text">"I'm the one, I'm the one, I'm the one — you need. Yeah, I am everything."</p>
+          <span class="vibe-q-song">— All Girls Are The Same</span>
+        </div>
+        <div class="vibe-q-card glass">
+          <p class="vibe-q-text">"I've been going through it, I've been going through it. Nobody can do it, I can see right through it."</p>
+          <span class="vibe-q-song">— Lucid Dreams</span>
+        </div>
+        <div class="vibe-q-card glass">
+          <p class="vibe-q-text">"Legends never die when the world is calling you. Can you hear them screaming out your name?"</p>
+          <span class="vibe-q-song">— Legends</span>
+        </div>
+      </div>
+    </div><!-- /#tab-vibe -->
+
   </main>
 
   <!-- ── MINI PLAYER (expanded player overlay) ── -->
@@ -277,6 +377,25 @@
       </div>
     </div>
   </div>
+
+  <!-- ── BOTTOM NAVIGATION BAR ── -->
+  <nav class="bottom-nav" id="bottom-nav" aria-label="Main navigation">
+    <button class="bnav-btn active" id="bnav-vault" data-tab="vault" aria-label="Vault">
+      <svg class="bnav-icon" viewBox="0 0 24 24" fill="currentColor"><path d="M4 6h16v2H4zm0 5h16v2H4zm0 5h16v2H4z"/><circle cx="2" cy="7" r="1" fill="currentColor"/><circle cx="2" cy="12" r="1" fill="currentColor"/><circle cx="2" cy="17" r="1" fill="currentColor"/></svg>
+      <span class="bnav-label">Vault</span>
+      <span class="bnav-dot"></span>
+    </button>
+    <button class="bnav-btn" id="bnav-vibe" data-tab="vibe" aria-label="Vibe">
+      <svg class="bnav-icon" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 14.5v-9l6 4.5-6 4.5z"/></svg>
+      <span class="bnav-label">999 Vibe</span>
+      <span class="bnav-dot"></span>
+    </button>
+    <button class="bnav-btn" id="bnav-player" data-tab="player" aria-label="Now Playing">
+      <svg class="bnav-icon" viewBox="0 0 24 24" fill="currentColor"><path d="M12 3v10.55c-.59-.34-1.27-.55-2-.55-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4V7h4V3h-6z"/></svg>
+      <span class="bnav-label">Playing</span>
+      <span class="bnav-dot"></span>
+    </button>
+  </nav>
 
 </div><!-- /.screen#screen-player -->
 

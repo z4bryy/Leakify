@@ -1,24 +1,61 @@
 {
-  "name": "Leakify",
+  "name": "Leakify — 999 Vault",
   "short_name": "Leakify",
-  "description": "JuiceWrld Premium Music Player",
+  "description": "JuiceWrld Private Music Vault · 999 Forever",
   "start_url": "/",
+  "scope": "/",
   "display": "standalone",
-  "background_color": "#060008",
-  "theme_color": "#BF5AF2",
-  "orientation": "portrait",
+  "display_override": ["standalone", "fullscreen"],
+  "background_color": "#030005",
+  "theme_color": "#030005",
+  "orientation": "portrait-primary",
+  "lang": "en",
+  "categories": ["music", "entertainment"],
+  "id": "leakify-999-vault",
   "icons": [
     {
       "src": "/static/icon-192.png",
       "sizes": "192x192",
       "type": "image/png",
-      "purpose": "any maskable"
+      "purpose": "any"
+    },
+    {
+      "src": "/static/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "maskable"
     },
     {
       "src": "/static/icon-512.png",
       "sizes": "512x512",
       "type": "image/png",
-      "purpose": "any maskable"
+      "purpose": "any"
+    },
+    {
+      "src": "/static/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
     }
-  ]
+  ],
+  "shortcuts": [
+    {
+      "name": "Open Vault",
+      "short_name": "Vault",
+      "description": "Jump straight to the music library",
+      "url": "/",
+      "icons": [{ "src": "/static/icon-192.png", "sizes": "192x192" }]
+    }
+  ],
+  "screenshots": [
+    {
+      "src": "/static/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "form_factor": "narrow",
+      "label": "Leakify Player"
+    }
+  ],
+  "related_applications": [],
+  "prefer_related_applications": false
 }

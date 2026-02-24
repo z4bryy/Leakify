@@ -1744,3 +1744,592 @@ body {
 #fpo-title.marquee-text {
   animation-duration: 16s;
 }
+
+/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+   NEXT-LEVEL UPGRADE — Feb 2026
+   KROK 1-6: 999 Loader · Bebas Neue · Bottom Nav · Vibe Section
+             Parallax · Enhanced Glassmorphism · Safe Area Polish
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+
+/* ── New CSS variables ── */
+:root {
+  --font-display: 'Bebas Neue', 'Impact', sans-serif;
+  --font-grunge:  'Permanent Marker', cursive;
+  --bnav-h:        68px;
+  --neon-1:        #8A2BE2;
+  --neon-2:        #BF5AF2;
+  --neon-3:        #D97EFF;
+}
+
+/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+   KROK 1/2 — 999 LOADER SCREEN
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+#screen-loader {
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  background: #020005;
+  overflow: hidden;
+  z-index: 200;
+}
+
+.loader-bg-glow {
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(ellipse 90% 80% at 50% 50%, rgba(138,43,226,0.35) 0%, transparent 65%),
+    radial-gradient(ellipse 60% 60% at 20% 80%, rgba(255,55,95,0.18) 0%, transparent 60%),
+    radial-gradient(ellipse 50% 50% at 80% 20%, rgba(10,132,255,0.12) 0%, transparent 60%);
+  animation: loaderGlowPulse 3s ease-in-out infinite alternate;
+  pointer-events: none;
+}
+@keyframes loaderGlowPulse {
+  from { opacity: 0.6; transform: scale(0.95); }
+  to   { opacity: 1;   transform: scale(1.05); }
+}
+
+.loader-content {
+  position: relative;
+  z-index: 2;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0;
+}
+
+.loader-999-wrap {
+  position: relative;
+  width: 200px;
+  height: 200px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 24px;
+}
+
+.loader-ring {
+  position: absolute;
+  border-radius: 50%;
+  border: 1.5px solid transparent;
+  pointer-events: none;
+}
+.loader-ring-1 {
+  inset: 0;
+  border-color: rgba(138,43,226,0.55);
+  animation: loaderRingSpin 3s linear infinite;
+  box-shadow: 0 0 18px rgba(138,43,226,0.4), inset 0 0 18px rgba(138,43,226,0.12);
+}
+.loader-ring-2 {
+  inset: 14px;
+  border-color: rgba(191,90,242,0.40);
+  border-style: dashed;
+  animation: loaderRingSpin 5s linear infinite reverse;
+}
+.loader-ring-3 {
+  inset: 28px;
+  border-color: rgba(217,126,255,0.25);
+  animation: loaderRingSpin 8s linear infinite;
+}
+@keyframes loaderRingSpin {
+  from { transform: rotate(0deg); }
+  to   { transform: rotate(360deg); }
+}
+
+.loader-999-text {
+  font-family: var(--font-display);
+  font-size: 88px;
+  line-height: 1;
+  background: linear-gradient(135deg, #D97EFF 0%, #8A2BE2 45%, #FF375F 80%, #FF9F0A 100%);
+  background-size: 300% 100%;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  filter: drop-shadow(0 0 20px rgba(138,43,226,0.8));
+  animation:
+    loader999GradShift 4s ease infinite,
+    loader999Pulse      2s ease-in-out infinite;
+  user-select: none;
+}
+@keyframes loader999GradShift {
+  0%   { background-position: 0%   50%; }
+  50%  { background-position: 100% 50%; }
+  100% { background-position: 0%   50%; }
+}
+@keyframes loader999Pulse {
+  0%,100% { filter: drop-shadow(0 0 16px rgba(138,43,226,0.7)); }
+  50%     { filter: drop-shadow(0 0 38px rgba(217,126,255,1.0)) drop-shadow(0 0 70px rgba(255,55,95,0.5)); }
+}
+
+.loader-brand {
+  font-family: var(--font-display);
+  font-size: 32px;
+  letter-spacing: 10px;
+  color: rgba(255,255,255,0.9);
+  text-transform: uppercase;
+  margin-bottom: 6px;
+  animation: loaderFadeUp 0.8s var(--ease-bounce) 0.3s both;
+}
+.loader-tag {
+  font-size: 11px;
+  letter-spacing: 4px;
+  font-weight: 600;
+  color: var(--text-3);
+  text-transform: uppercase;
+  margin-bottom: 32px;
+  animation: loaderFadeUp 0.8s var(--ease-bounce) 0.5s both;
+}
+@keyframes loaderFadeUp {
+  from { opacity: 0; transform: translateY(20px); }
+  to   { opacity: 1; transform: none; }
+}
+
+.loader-bar-wrap {
+  width: 160px;
+  height: 3px;
+  background: rgba(255,255,255,0.1);
+  border-radius: 99px;
+  overflow: hidden;
+  animation: loaderFadeUp 0.8s var(--ease-bounce) 0.7s both;
+}
+.loader-bar {
+  height: 100%;
+  width: 0%;
+  background: linear-gradient(90deg, var(--neon-1), var(--neon-2), var(--pink));
+  border-radius: 99px;
+  transition: width 0.12s linear;
+  box-shadow: 0 0 10px rgba(138,43,226,0.8);
+}
+
+/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+   KROK 4 — BEBAS NEUE TYPOGRAPHY
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+.login-title {
+  font-family: var(--font-display) !important;
+  font-size: 52px !important;
+  letter-spacing: 14px !important;
+  line-height: 1;
+  /* inherit gradient + animation from existing rule */
+}
+
+.header-title {
+  font-family: var(--font-display) !important;
+  font-size: 24px !important;
+  letter-spacing: 6px !important;
+}
+
+.hero-track-name {
+  font-family: var(--font-display) !important;
+  font-size: 26px !important;
+  letter-spacing: 2px !important;
+}
+
+.fpo-title {
+  font-family: var(--font-display) !important;
+  font-size: 30px !important;
+  letter-spacing: 1px !important;
+}
+
+.tracks-heading {
+  font-family: var(--font-display) !important;
+  font-size: 28px !important;
+  letter-spacing: 4px !important;
+}
+
+/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+   KROK 2 — BOTTOM NAVIGATION BAR
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+.bottom-nav {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: calc(var(--bnav-h) + max(env(safe-area-inset-bottom), 0px));
+  padding-bottom: max(env(safe-area-inset-bottom), 0px);
+  z-index: 55;
+  background: rgba(4,0,8,0.92);
+  backdrop-filter: blur(32px) saturate(220%);
+  -webkit-backdrop-filter: blur(32px) saturate(220%);
+  border-top: 1px solid rgba(138,43,226,0.22);
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-around;
+  padding-top: 2px;
+  box-shadow: 0 -8px 32px rgba(0,0,0,0.5), 0 -1px 0 rgba(138,43,226,0.15);
+}
+
+.bnav-btn {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  padding: 10px 0 8px;
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: rgba(235,235,245,0.35);
+  transition: color 0.25s var(--ease), transform 0.2s var(--ease-spring);
+  position: relative;
+  -webkit-tap-highlight-color: transparent;
+  min-height: var(--bnav-h);
+}
+.bnav-btn:active {
+  transform: scale(0.88);
+}
+.bnav-btn.active {
+  color: var(--neon-3);
+}
+
+.bnav-icon {
+  width: 24px;
+  height: 24px;
+  transition: filter 0.25s;
+}
+.bnav-btn.active .bnav-icon {
+  filter: drop-shadow(0 0 6px rgba(191,90,242,0.9));
+}
+
+.bnav-label {
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.5px;
+  line-height: 1;
+  text-transform: uppercase;
+}
+
+/* Active indicator dot */
+.bnav-dot {
+  position: absolute;
+  top: 6px;
+  width: 4px; height: 4px;
+  border-radius: 50%;
+  background: var(--neon-2);
+  opacity: 0;
+  transform: scale(0);
+  transition: opacity 0.3s, transform 0.3s var(--ease-bounce);
+  box-shadow: 0 0 8px rgba(191,90,242,0.9);
+}
+.bnav-btn.active .bnav-dot {
+  opacity: 1;
+  transform: scale(1);
+}
+
+/* Ripple glow on tab tap */
+.bnav-btn::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: 12px;
+  background: radial-gradient(circle at center, rgba(191,90,242,0.18), transparent 70%);
+  opacity: 0;
+  transition: opacity 0.3s;
+  pointer-events: none;
+}
+.bnav-btn:active::before { opacity: 1; }
+
+/* ── Adjust content padding for bottom nav ── */
+.player-content {
+  padding-bottom: calc(var(--npb-h) + var(--bnav-h) + max(env(safe-area-inset-bottom), 0px) + 24px) !important;
+}
+
+/* ── Reposition mini player above bottom nav ── */
+.now-playing-bar {
+  bottom: calc(var(--bnav-h) + max(env(safe-area-inset-bottom), 0px) + 8px) !important;
+}
+
+@media (min-width: 768px) {
+  .now-playing-bar {
+    bottom: calc(var(--bnav-h) + 16px) !important;
+  }
+  .bottom-nav {
+    max-width: 640px;
+    left: 50%;
+    right: auto;
+    transform: translateX(-50%);
+    border-radius: 20px 20px 0 0;
+    border-left: 1px solid rgba(138,43,226,0.22);
+    border-right: 1px solid rgba(138,43,226,0.22);
+  }
+}
+
+/* ── Tab panel show/hide ── */
+.tab-panel { display: block; }
+.tab-panel.hidden { display: none; }
+
+/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+   KROK 5 — VIBE SECTION (Unsplash)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+#tab-vibe {
+  padding-bottom: 24px;
+}
+
+.vibe-hero {
+  position: relative;
+  width: 100%;
+  height: 52vw;
+  min-height: 220px;
+  max-height: 380px;
+  overflow: hidden;
+  border-radius: 0 0 32px 32px;
+  margin-bottom: 20px;
+}
+.vibe-hero-img {
+  position: absolute;
+  inset: 0;
+  background-size: cover;
+  background-position: center;
+  transform: scale(1.08);
+  transition: transform 8s ease-in-out;
+  will-change: transform;
+}
+.vibe-hero:hover .vibe-hero-img { transform: scale(1.0); }
+
+.vibe-hero-overlay {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    180deg,
+    rgba(3,0,8,0.25) 0%,
+    rgba(3,0,8,0.10) 40%,
+    rgba(3,0,8,0.72) 75%,
+    rgba(3,0,8,0.95) 100%
+  );
+}
+
+.vibe-hero-text {
+  position: absolute;
+  bottom: 0; left: 0; right: 0;
+  padding: 24px 24px 28px;
+  z-index: 2;
+}
+.vibe-999-badge {
+  display: inline-block;
+  font-family: var(--font-display);
+  font-size: 22px;
+  letter-spacing: 8px;
+  color: var(--neon-3);
+  text-shadow: 0 0 18px rgba(191,90,242,1), 0 0 48px rgba(191,90,242,0.6);
+  margin-bottom: 8px;
+  animation: neonBadgePulse 3s ease-in-out infinite;
+}
+@keyframes neonBadgePulse {
+  0%,100% { text-shadow: 0 0 12px rgba(191,90,242,0.9), 0 0 32px rgba(191,90,242,0.4); }
+  50%     { text-shadow: 0 0 28px rgba(217,126,255,1.0), 0 0 65px rgba(138,43,226,0.8), 0 0 120px rgba(255,55,95,0.3); }
+}
+
+.vibe-quote {
+  font-family: var(--font-display);
+  font-size: 32px;
+  line-height: 1.1;
+  color: #fff;
+  text-shadow: 0 2px 20px rgba(0,0,0,0.8);
+  margin-bottom: 8px;
+  letter-spacing: 1px;
+}
+.vibe-quote-attr {
+  font-size: 12px;
+  font-weight: 500;
+  letter-spacing: 2px;
+  color: rgba(235,235,245,0.55);
+  text-transform: uppercase;
+}
+
+/* Image grid */
+.vibe-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  padding: 0 12px;
+  margin-bottom: 20px;
+}
+.vibe-card {
+  position: relative;
+  border-radius: 16px;
+  overflow: hidden;
+  background-size: cover;
+  background-position: center;
+  aspect-ratio: 1 / 1;
+  cursor: pointer;
+  transition: transform 0.3s var(--ease-bounce), box-shadow 0.3s;
+  animation: trackEntrance 0.5s var(--ease-bounce) both;
+}
+.vibe-card:active { transform: scale(0.96); }
+@media (hover: hover) {
+  .vibe-card:hover {
+    transform: scale(1.03);
+    box-shadow: 0 8px 32px rgba(138,43,226,0.4);
+  }
+}
+.vibe-card-lg {
+  grid-column: 1 / -1;
+  aspect-ratio: 16 / 7;
+}
+.vibe-card-wide {
+  grid-column: 1 / -1;
+  aspect-ratio: 16 / 7;
+}
+
+.vibe-card-overlay {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(180deg, transparent 40%, rgba(3,0,8,0.85) 100%);
+}
+.vibe-card-label {
+  position: absolute;
+  bottom: 12px; left: 14px;
+  font-family: var(--font-display);
+  font-size: 16px;
+  letter-spacing: 2px;
+  color: rgba(255,255,255,0.9);
+  text-shadow: 0 1px 8px rgba(0,0,0,0.7);
+  z-index: 2;
+}
+
+/* Stats row */
+.vibe-stats {
+  display: flex;
+  gap: 10px;
+  padding: 0 12px;
+  margin-bottom: 20px;
+}
+.vibe-stat-card {
+  flex: 1;
+  text-align: center;
+  padding: 16px 8px;
+  border-radius: var(--radius-md);
+  border: 1px solid rgba(138,43,226,0.25);
+}
+.vibe-stat-num {
+  font-family: var(--font-display);
+  font-size: 34px;
+  line-height: 1;
+  background: linear-gradient(135deg, var(--neon-3), var(--neon-1));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  margin-bottom: 4px;
+  filter: drop-shadow(0 0 6px rgba(191,90,242,0.5));
+}
+.vibe-stat-label {
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 2px;
+  color: var(--text-3);
+  text-transform: uppercase;
+}
+
+/* Quote cards */
+.vibe-quotes-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 0 12px 12px;
+}
+.vibe-q-card {
+  padding: 18px 20px;
+  border-radius: var(--radius-md);
+  border-left: 3px solid var(--neon-1);
+  animation: trackEntrance 0.5s var(--ease-bounce) both;
+}
+.vibe-q-text {
+  font-size: 14px;
+  font-style: italic;
+  color: var(--text-2);
+  line-height: 1.6;
+  margin-bottom: 8px;
+}
+.vibe-q-song {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 1.5px;
+  color: var(--neon-2);
+  text-transform: uppercase;
+}
+
+/* Glassmorphism helper */
+.glass {
+  background: rgba(22, 5, 36, 0.65);
+  backdrop-filter: blur(18px) saturate(180%);
+  -webkit-backdrop-filter: blur(18px) saturate(180%);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.06), 0 4px 24px rgba(0,0,0,0.35);
+}
+
+/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+   KROK 3 — ENHANCED GLASSMORPHISM
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+/* Deeper neon glow on track cards */
+.track-card.active {
+  box-shadow:
+    0 0 0 1px rgba(138,43,226,0.7),
+    0 0 28px rgba(138,43,226,0.28),
+    0 0 60px rgba(138,43,226,0.12),
+    inset 0 0 28px rgba(138,43,226,0.07) !important;
+}
+
+/* Button micro-interaction: scale + neon glow */
+.login-btn:active {
+  transform: scale(0.95) !important;
+  box-shadow: 0 0 0 3px rgba(138,43,226,0.55), 0 8px 30px rgba(191,90,242,0.4) !important;
+}
+.npb-play:active {
+  transform: scale(0.88) !important;
+  box-shadow: 0 0 0 4px rgba(191,90,242,0.5), 0 6px 24px rgba(138,43,226,0.5) !important;
+}
+.fpo-play-big:active {
+  transform: scale(0.92) !important;
+  box-shadow: 0 0 0 5px rgba(191,90,242,0.5), 0 8px 40px rgba(138,43,226,0.6) !important;
+}
+
+/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+   KROK 6 — PARALLAX + ENHANCED SCROLL
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+/* Aurora layers get transform applied by JS parallax.
+   Ensure they don't flash during transition */
+.aurora-layer {
+  transition: transform 0.1s linear;
+  will-change: transform;
+}
+
+/* Vibe hero parallax image (JS driven as well) */
+.vibe-hero-img {
+  will-change: transform;
+}
+
+/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+   KROK 6 — iOS SAFE AREA FINAL POLISH
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+/* Dynamic Island / Notch awareness for login card */
+.login-card {
+  margin-top: max(env(safe-area-inset-top), 20px) !important;
+}
+
+/* Ensure FPO drag handle respects Dynamic Island */
+.fpo-drag-handle {
+  margin-top: max(calc(env(safe-area-inset-top) + 8px), 20px) !important;
+}
+
+/* Login subtitle upgrade */
+.login-subtitle {
+  font-size: 14px !important;
+  letter-spacing: 5px !important;
+}
+
+/* Login footer with grunge font */
+.login-footer {
+  font-family: var(--font-grunge) !important;
+  font-size: 16px !important;
+  letter-spacing: 5px !important;
+}
+
+/* Enhanced header logo pulse — deeper neon */
+@keyframes headerLogoPulse {
+  0%,100% { box-shadow: 0 0 14px rgba(138,43,226,0.42); }
+  50%      { box-shadow: 0 0 32px rgba(138,43,226,0.75), 0 0 60px rgba(255,55,95,0.25); }
+}
+
+/* Loader screen exit animation */
+#screen-loader.fade-out {
+  animation: loaderExit 0.6s var(--ease) forwards;
+}
+@keyframes loaderExit {
+  to { opacity: 0; transform: scale(1.06); }
+}

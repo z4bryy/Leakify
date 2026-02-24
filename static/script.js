@@ -37,8 +37,7 @@ const $  = (id) => document.getElementById(id);
 const $$ = (sel) => document.querySelectorAll(sel);
 
 // ── Element refs ──────────────────────────────
-const audio          = $('audio-player');
-const screenLogin    = $('screen-login');
+const audio          = $('audio-player');const screenLoader   = $('screen-loader');const screenLogin    = $('screen-login');
 const screenVideo    = $('screen-video');
 const screenPlayer   = $('screen-player');
 
@@ -214,21 +213,38 @@ if ('serviceWorker' in navigator) {
 }
 
 // ══════════════════════════════════════════
-//  BOOT — check session
+//  BOOT — 999 Loader → Login
 // ══════════════════════════════════════════
 window.addEventListener('DOMContentLoaded', () => {
-  // Always require login on every app open
-  showScreen(screenLogin);
-  setupAllEvents();
-  const initVol = (volumeSlider.value || 80) / 100;
-  audio.volume = initVol;
-  npbVolume.value = volumeSlider.value || 80;
-  syncVolumeSliderBg(npbVolume);
-  syncVolumeSliderBg(volumeSlider);
+  // ── 999 Intro Loader ──
+  const loaderBar = $('loader-bar');
+  let loaderPct = 0;
+  const loaderInterval = setInterval(() => {
+    // Fast start, slow finish
+    const step = loaderPct < 60 ? 6 : loaderPct < 85 ? 2.5 : 0.8;
+    loaderPct = Math.min(loaderPct + step, 100);
+    if (loaderBar) loaderBar.style.width = loaderPct + '%';
+    if (loaderPct >= 100) {
+      clearInterval(loaderInterval);
+      // Small pause at 100% then exit
+      setTimeout(() => {
+        if (screenLoader) screenLoader.classList.add('fade-out');
+        setTimeout(() => {
+          showScreen(screenLogin);
+          setupAllEvents();
+          const initVol = (volumeSlider.value || 80) / 100;
+          audio.volume = initVol;
+          npbVolume.value = volumeSlider.value || 80;
+          syncVolumeSliderBg(npbVolume);
+          syncVolumeSliderBg(volumeSlider);
+        }, 600);
+      }, 350);
+    }
+  }, 28); // ~100 steps * 28ms = 2.8s total
 });
 
 function showScreen(el) {
-  [screenLogin, screenVideo, screenPlayer].forEach(s => {
+  [screenLoader, screenLogin, screenVideo, screenPlayer].forEach(s => {
     s.classList.remove('active');
     s.style.display = 'none';
     s.style.opacity = '0';
@@ -377,6 +393,9 @@ async function loadLibrary() {
     allSongs   = data.songs || [];
     buildPills();
     applyFilter();
+    // Update vibe count whenever library loads
+    const vibeNum = $('vibe-track-num');
+    if (vibeNum) vibeNum.textContent = allSongs.length || '—';
   } catch (err) {
     console.error('Library load error:', err);
     songList.innerHTML = `<div class="no-songs"><strong>Could not load library</strong>Make sure Flask is running and music files are placed in<br><em>Leakify-music-src/</em></div>`;
@@ -881,8 +900,102 @@ function setupAllEvents() {
 
   // iOS: prevent bounce scroll on body
   document.addEventListener('touchmove', (e) => {
-    if (!e.target.closest('.player-content') && !e.target.closest('.fpo-content') && !e.target.closest('.pills-inner')) {
+    if (!e.target.closest('.player-content') &&
+        !e.target.closest('.fpo-content') &&
+        !e.target.closest('.pills-inner') &&
+        !e.target.closest('#screen-loader') &&
+        !e.target.closest('.vibe-grid')) {
       e.preventDefault();
     }
   }, { passive: false });
+
+  // ── Bottom Navigation ──
+  setupBottomNav();
+
+  // ── Parallax on scroll ──
+  setupParallax();
+}
+
+// ══════════════════════════════════════════
+//  BOTTOM NAVIGATION
+// ══════════════════════════════════════════
+function setupBottomNav() {
+  const bnavVault  = $('bnav-vault');
+  const bnavVibe   = $('bnav-vibe');
+  const bnavPlayer = $('bnav-player');
+  const tabVault   = $('tab-vault');
+  const tabVibe    = $('tab-vibe');
+  const btns       = [bnavVault, bnavVibe, bnavPlayer];
+  const heroSection = $('now-playing-hero');
+
+  function setTab(tab) {
+    // All off
+    btns.forEach(b => b && b.classList.remove('active'));
+    if (tabVault)  tabVault.classList.add('hidden');
+    if (tabVibe)   tabVibe.classList.add('hidden');
+
+    if (tab === 'vault') {
+      bnavVault && bnavVault.classList.add('active');
+      tabVault  && tabVault.classList.remove('hidden');
+      // Smooth scroll to top
+      const pc = $('player-content');
+      if (pc) pc.scrollTo({ top: 0, behavior: 'smooth' });
+    } else if (tab === 'vibe') {
+      bnavVibe && bnavVibe.classList.add('active');
+      tabVibe  && tabVibe.classList.remove('hidden');
+      // Update stat counter
+      const vibeNum = $('vibe-track-num');
+      if (vibeNum && allSongs.length > 0) vibeNum.textContent = allSongs.length;
+      // Scroll to top
+      const pc = $('player-content');
+      if (pc) pc.scrollTo({ top: 0, behavior: 'smooth' });
+    } else if (tab === 'player') {
+      // Opens FPO if a song is active, else go to vault
+      bnavVault && bnavVault.classList.add('active');
+      tabVault  && tabVault.classList.remove('hidden');
+      if (isPlaying || audio.src) {
+        openFPO();
+      }
+    }
+  }
+
+  bnavVault  && bnavVault.addEventListener('click',  () => setTab('vault'));
+  bnavVibe   && bnavVibe.addEventListener('click',   () => setTab('vibe'));
+  bnavPlayer && bnavPlayer.addEventListener('click', () => setTab('player'));
+}
+
+// ══════════════════════════════════════════
+//  PARALLAX SCROLL EFFECT  (aurora + vibe hero)
+// ══════════════════════════════════════════
+function setupParallax() {
+  const playerContent = $('player-content');
+  const aurora1 = document.querySelector('.aurora-1');
+  const aurora2 = document.querySelector('.aurora-2');
+  const aurora3 = document.querySelector('.aurora-3');
+  const aurora4 = document.querySelector('.aurora-4');
+  const vibeHeroImg = document.querySelector('.vibe-hero-img');
+
+  if (!playerContent) return;
+
+  let ticking = false;
+  playerContent.addEventListener('scroll', () => {
+    if (!ticking) {
+      requestAnimationFrame(() => {
+        const sy = playerContent.scrollTop;
+        const factor = 0.18;
+        // Aurora layers drift at different rates for depth
+        if (aurora1) aurora1.style.transform = `translate(0, ${sy * factor * 0.5}px) scale(1)`;
+        if (aurora2) aurora2.style.transform = `translate(${sy * factor * -0.3}px, ${sy * factor * 0.8}px) scale(1)`;
+        if (aurora3) aurora3.style.transform = `translate(${sy * factor * 0.4}px, ${sy * factor * -0.6}px) scale(1)`;
+        if (aurora4) aurora4.style.transform = `translate(${sy * factor * -0.5}px, ${sy * factor * 0.3}px) scale(1)`;
+        // Vibe hero image parallax
+        if (vibeHeroImg) {
+          // Vibe tab is in the same scrollable container
+          vibeHeroImg.style.transform = `scale(1.08) translateY(${sy * 0.08}px)`;
+        }
+        ticking = false;
+      });
+      ticking = true;
+    }
+  }, { passive: true });
 }
