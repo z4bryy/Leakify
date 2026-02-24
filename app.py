@@ -1,4 +1,4 @@
-from flask import Flask, jsonify, send_from_directory, render_template, request
+from flask import Flask, jsonify, send_from_directory, render_template, request, redirect
 from urllib.parse import quote as urlquote
 import os
 import hmac
@@ -177,7 +177,11 @@ def play(filename):
 
 @app.route('/video/<path:filename>')
 def serve_video(filename):
-    """Stream video file with range-request support"""
+    """Stream video file — redirect to GitHub raw CDN on Vercel (supports range requests),
+    serve locally otherwise."""
+    if IS_VERCEL:
+        github_url = f"https://raw.githubusercontent.com/z4bryy/Leakify/main/static/videos/{filename}"
+        return redirect(github_url, code=302)
     return send_from_directory(VIDEO_FOLDER, filename, conditional=True)
 
 if __name__ == '__main__':
