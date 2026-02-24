@@ -7,6 +7,21 @@
   ],
   "routes": [
     {
+      "src": "/static/videos/(.*)",
+      "dest": "/static/videos/$1",
+      "headers": {
+        "cache-control": "public, max-age=31536000, immutable",
+        "accept-ranges": "bytes"
+      }
+    },
+    {
+      "src": "/static/(.*)",
+      "dest": "/static/$1",
+      "headers": {
+        "cache-control": "public, max-age=86400"
+      }
+    },
+    {
       "src": "/(.*)",
       "dest": "app.py"
     }
