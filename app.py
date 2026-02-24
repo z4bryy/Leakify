@@ -86,10 +86,22 @@ def generate_icons():
             if not os.path.exists(path):
                 img = Image.new('RGB', (size, size), color=(6, 0, 8))
                 draw = ImageDraw.Draw(img)
-                margin = size // 8
+                # Full-bleed purple circle — fills entire canvas (maskable safe zone = center 80%)
+                margin = size // 32  # ~3% — effectively edge-to-edge
                 draw.ellipse([margin, margin, size - margin, size - margin], fill=(191, 90, 242))
-                inner = size // 3
-                draw.ellipse([inner, inner, size - inner, size - inner], fill=(6, 0, 8))
+                # Dark inner circle to create a ring; then draw play triangle
+                ring_w = max(size // 10, 8)   # ring thickness ~10% of icon
+                inner_m = margin + ring_w
+                draw.ellipse([inner_m, inner_m, size - inner_m, size - inner_m], fill=(6, 0, 8))
+                # Play button triangle (centered)
+                cx, cy = size // 2, size // 2
+                tri_r = size // 5
+                pts = [
+                    (cx - tri_r // 2, cy - tri_r),
+                    (cx - tri_r // 2, cy + tri_r),
+                    (cx + tri_r, cy),
+                ]
+                draw.polygon(pts, fill=(191, 90, 242))
                 img.save(path)
     except (ImportError, OSError):
         pass
