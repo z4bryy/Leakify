@@ -253,6 +253,17 @@ def get_songs():
         'session edits': (2, 'SESSION'),
         'extras':        (1, 'EXTRA'),
     }
+
+    # Manual artist corrections — keyed by lowercased display name (no extension).
+    # Use this when a file is stored in the wrong bucket folder.
+    ARTIST_OVERRIDES = {
+        'agc overseas':       'Ken Carson',
+        'for u mars':         'Ken Carson',
+        'chrome hearts':      'Ken Carson',
+        'i need u(coachella)': 'Ken Carson',
+        'margiela':           'Ken Carson',
+    }
+
     AUDIO_EXTS = {'.mp3', '.m4a', '.wav', '.flac', '.ogg'}
 
     # ── Supabase mode ────────────────────────────────────────────────────
@@ -277,6 +288,7 @@ def get_songs():
             subfolder    = "/".join(sub_parts)
             sub_key      = sub_parts[0].strip().lower() if sub_parts else ""
             pri, tag     = SUBFOLDER_PRIORITY.get(sub_key, (0, "LEAKED"))
+            artist       = ARTIST_OVERRIDES.get(display_name.strip().lower(), artist)
 
             raw.append({
                 "display":   display_name,
@@ -336,6 +348,7 @@ def get_songs():
             display_name = os.path.splitext(file)[0]
             sub_key  = sub_parts[0].strip().lower() if sub_parts else ""
             pri, tag = SUBFOLDER_PRIORITY.get(sub_key, (0, "LEAKED"))
+            artist   = ARTIST_OVERRIDES.get(display_name.strip().lower(), artist)
             raw.append({
                 "display":   display_name,
                 "filename":  rel_path,
