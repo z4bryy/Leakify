@@ -757,7 +757,7 @@ function openFPO() {
   // Show only the 'Playing' button as active while FPO is open
   $$('.bnav-btn').forEach(b => b.classList.remove('active'));
   const bp = $('bnav-player');
-  if (bp) bp.classList.add('active');
+  if (bp) { bp.classList.add('active'); moveBnavPill(bp); }
 }
 function closeFPO() {
   fpoOpen = false;
@@ -768,13 +768,15 @@ function closeFPO() {
   const tabVault = $('tab-vault');
   const tab999   = $('tab-999');
   const tabHome  = $('tab-home');
+  let reactivated;
   if (tabVault && !tabVault.classList.contains('hidden')) {
-    $('bnav-vault')?.classList.add('active');
+    reactivated = $('bnav-vault');
   } else if (tab999 && !tab999.classList.contains('hidden')) {
-    $('bnav-999')?.classList.add('active');
+    reactivated = $('bnav-999');
   } else {
-    $('bnav-home')?.classList.add('active');
+    reactivated = $('bnav-home');
   }
+  if (reactivated) { reactivated.classList.add('active'); moveBnavPill(reactivated); }
 }
 
 // Swipe-down-to-close gesture (iOS native feel)
@@ -1044,6 +1046,19 @@ function setupAllEvents() {
 // ══════════════════════════════════════════
 //  BOTTOM NAVIGATION
 // ══════════════════════════════════════════
+// ── Sliding pill indicator for bottom nav ──────────────────
+function moveBnavPill(activeBtn) {
+  const pill = $('bnav-pill');
+  const nav  = $('bottom-nav');
+  if (!pill || !activeBtn || !nav) return;
+  const navRect = nav.getBoundingClientRect();
+  const btnRect = activeBtn.getBoundingClientRect();
+  const center   = btnRect.left - navRect.left + btnRect.width / 2;
+  const pillW    = btnRect.width - 16;
+  pill.style.width = pillW + 'px';
+  pill.style.left  = (center - pillW / 2) + 'px';
+}
+
 function setupBottomNav() {
   const bnavHome   = $('bnav-home');
   const bnavVault  = $('bnav-vault');
@@ -1069,14 +1084,17 @@ function setupBottomNav() {
     if (tab === 'home') {
       bnavHome  && bnavHome.classList.add('active');
       tabHome   && tabHome.classList.remove('hidden');
+      moveBnavPill(bnavHome);
       scrollTop();
     } else if (tab === 'vault') {
       bnavVault && bnavVault.classList.add('active');
       tabVault  && tabVault.classList.remove('hidden');
+      moveBnavPill(bnavVault);
       scrollTop();
     } else if (tab === '999') {
       bnav999   && bnav999.classList.add('active');
       tab999    && tab999.classList.remove('hidden');
+      moveBnavPill(bnav999);
       // Update stat counter
       const vibeNum = $('vibe-track-num');
       if (vibeNum && allSongs.length > 0) vibeNum.textContent = allSongs.length;
@@ -1085,6 +1103,7 @@ function setupBottomNav() {
       // Opens FPO if a song is active, else fall back to vault
       bnavVault && bnavVault.classList.add('active');
       tabVault  && tabVault.classList.remove('hidden');
+      moveBnavPill(bnavVault);
       if (isPlaying || (audio.src && audio.src !== window.location.href)) {
         openFPO();
       }
@@ -1096,8 +1115,15 @@ function setupBottomNav() {
   bnav999    && bnav999.addEventListener('click',    () => setTab('999'));
   bnavPlayer && bnavPlayer.addEventListener('click', () => setTab('player'));
 
+  // Reposition pill on resize (orientation change)
+  window.addEventListener('resize', () => {
+    const activeBtn = document.querySelector('.bnav-btn.active');
+    if (activeBtn) moveBnavPill(activeBtn);
+  });
+
   // Default tab on load: home
-  setTab('home');
+  // Use rAF so the nav has painted and getBoundingClientRect is accurate
+  requestAnimationFrame(() => setTab('home'));
 }
 
 // ══════════════════════════════════════════

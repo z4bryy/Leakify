@@ -1867,6 +1867,9 @@ body {
 /* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
    KROK 2 — BOTTOM NAVIGATION BAR
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+/* ═══════════════════════════════════════════
+   BOTTOM NAV  —  Professional sticky tab bar
+═══════════════════════════════════════════ */
 .bottom-nav {
   position: fixed;
   bottom: 0;
@@ -1875,15 +1878,50 @@ body {
   height: calc(var(--bnav-h) + max(env(safe-area-inset-bottom), 0px));
   padding-bottom: max(env(safe-area-inset-bottom), 0px);
   z-index: 55;
-  background: rgba(4,0,8,0.92);
-  backdrop-filter: blur(32px) saturate(220%);
-  -webkit-backdrop-filter: blur(32px) saturate(220%);
-  border-top: 1px solid rgba(138,43,226,0.22);
+  /* Layered glass background */
+  background: rgba(8, 2, 14, 0.88);
+  backdrop-filter: blur(40px) saturate(280%) brightness(0.95);
+  -webkit-backdrop-filter: blur(40px) saturate(280%) brightness(0.95);
+  /* Gradient top border — glowing purple line */
+  border-top: none;
   display: flex;
   align-items: flex-start;
   justify-content: space-around;
-  padding-top: 2px;
-  box-shadow: 0 -8px 32px rgba(0,0,0,0.5), 0 -1px 0 rgba(138,43,226,0.15);
+  padding-top: 3px;
+  box-shadow:
+    0 -1px 0 rgba(191, 90, 242, 0.35),
+    0 -8px 40px rgba(0, 0, 0, 0.6),
+    inset 0 1px 0 rgba(255, 255, 255, 0.05);
+}
+
+/* Top gradient accent line */
+.bottom-nav::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 1px;
+  background: linear-gradient(90deg,
+    transparent 0%,
+    rgba(191, 90, 242, 0.6) 25%,
+    rgba(255, 55, 95, 0.5) 50%,
+    rgba(191, 90, 242, 0.6) 75%,
+    transparent 100%);
+}
+
+/* Sliding pill indicator */
+.bnav-pill {
+  position: absolute;
+  top: 8px;
+  width: calc(25% - 16px);
+  height: 36px;
+  background: linear-gradient(135deg, rgba(191,90,242,0.18), rgba(255,55,95,0.10));
+  border: 1px solid rgba(191, 90, 242, 0.25);
+  border-radius: 12px;
+  transition: left 0.35s cubic-bezier(0.34, 1.56, 0.64, 1);
+  pointer-events: none;
+  backdrop-filter: blur(8px);
+  box-shadow: 0 0 12px rgba(191,90,242,0.15), inset 0 1px 0 rgba(255,255,255,0.06);
+  left: 8px; /* JS positions this */
 }
 
 .bnav-btn {
@@ -1892,75 +1930,81 @@ body {
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 4px;
-  padding: 10px 0 8px;
+  gap: 3px;
+  padding: 8px 0 6px;
   background: none;
   border: none;
   cursor: pointer;
-  color: rgba(235,235,245,0.35);
-  transition: color 0.25s var(--ease), transform 0.2s var(--ease-spring);
+  color: rgba(235, 235, 245, 0.32);
+  transition: color 0.22s ease;
   position: relative;
   -webkit-tap-highlight-color: transparent;
   min-height: var(--bnav-h);
+  z-index: 1;
 }
-.bnav-btn:active {
-  transform: scale(0.88);
-}
+
 .bnav-btn.active {
-  color: var(--neon-3);
+  color: #fff;
+}
+
+/* Icon container — scales up on active */
+.bnav-icon-wrap {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 8px;
+  transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+.bnav-btn:active .bnav-icon-wrap {
+  transform: scale(0.84);
+}
+.bnav-btn.active .bnav-icon-wrap {
+  transform: scale(1.12);
 }
 
 .bnav-icon {
-  width: 24px;
-  height: 24px;
+  width: 22px;
+  height: 22px;
   transition: filter 0.25s;
 }
 .bnav-btn.active .bnav-icon {
-  filter: drop-shadow(0 0 6px rgba(191,90,242,0.9));
+  filter: drop-shadow(0 0 5px rgba(191, 90, 242, 0.85));
+}
+.bnav-btn#bnav-player.active .bnav-icon {
+  filter: drop-shadow(0 0 6px rgba(255, 55, 95, 0.9)) drop-shadow(0 0 2px rgba(191,90,242,0.8));
 }
 
 .bnav-label {
   font-size: 10px;
   font-weight: 600;
-  letter-spacing: 0.5px;
+  letter-spacing: 0.4px;
   line-height: 1;
   text-transform: uppercase;
+  transition: opacity 0.22s;
+  opacity: 0.5;
 }
-
-/* Active indicator dot */
-.bnav-dot {
-  position: absolute;
-  top: 6px;
-  width: 4px; height: 4px;
-  border-radius: 50%;
-  background: var(--neon-2);
-  opacity: 0;
-  transform: scale(0);
-  transition: opacity 0.3s, transform 0.3s var(--ease-bounce);
-  box-shadow: 0 0 8px rgba(191,90,242,0.9);
-}
-.bnav-btn.active .bnav-dot {
+.bnav-btn.active .bnav-label {
   opacity: 1;
-  transform: scale(1);
+  background: linear-gradient(90deg, #BF5AF2, #FF375F);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
 }
 
-/* Ripple glow on tab tap */
-.bnav-btn::before {
+/* Touch ripple */
+.bnav-btn::after {
   content: '';
   position: absolute;
   inset: 0;
-  border-radius: 12px;
-  background: radial-gradient(circle at center, rgba(191,90,242,0.18), transparent 70%);
+  border-radius: 14px;
+  background: radial-gradient(circle at center, rgba(191,90,242,0.22), transparent 65%);
   opacity: 0;
-  transition: opacity 0.3s;
+  transition: opacity 0.25s;
   pointer-events: none;
 }
-.bnav-btn:active::before { opacity: 1; }
-
-/* ── Playing tab: persistent glow indicator when FPO is open ── */
-.bnav-btn#bnav-player.active .bnav-icon {
-  filter: drop-shadow(0 0 8px rgba(255,55,95,0.9)) drop-shadow(0 0 2px rgba(191,90,242,1));
-}
+.bnav-btn:active::after { opacity: 1; }
 
 /* ── Adjust content padding for bottom nav ── */
 .player-content {
