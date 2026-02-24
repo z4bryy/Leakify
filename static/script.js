@@ -528,6 +528,7 @@ function playSong(idx, skipHistory = false) {
   const cards = songList.querySelectorAll('.track-card');
   if (cards[idx]) cards[idx].classList.add('buffering');
 
+  let _retried = false;
   const tryPlay = (url) => {
     // Do NOT call audio.load() — it forces a full reset and re-buffer from scratch,
     // causing 20-30s delays. Setting src + play() directly is the correct approach.
@@ -539,16 +540,19 @@ function playSong(idx, skipHistory = false) {
         onPlayStart(song);
       })
       .catch(err => {
-        console.error('Playback error:', err);
-        // If URL may be stale (403/expired), try fetching a fresh one
-        if (song.filename && String(err).includes('AbortError') === false) {
+        const errStr = String(err);
+        console.error('Playback error:', errStr);
+        // Only retry once for auth/network errors (not NotSupportedError = missing file)
+        if (!_retried && song.filename
+            && !errStr.includes('AbortError')
+            && !errStr.includes('NotSupportedError')) {
+          _retried = true;
           fetch(`/api/song-url?path=${encodeURIComponent(song.filename)}`)
             .then(r => r.ok ? r.json() : null)
             .then(data => {
               if (data && data.url) {
                 song.url = data.url;
-                audio.src = data.url;
-                audio.play().catch(() => {});
+                tryPlay(data.url);
               }
             })
             .catch(() => {});

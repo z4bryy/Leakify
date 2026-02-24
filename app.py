@@ -76,10 +76,15 @@ def _sb_signed_urls(paths):
     result = {}
     for item in items:
         p = item.get('path', '')
-        # signedURL may be relative: /storage/v1/object/sign/...?token=...
+        # signedURL may be relative; Supabase sometimes returns /storage/v1/object/sign/...
+        # and sometimes just /object/sign/... — normalise both forms.
         signed = item.get('signedURL', '') or item.get('signedUrl', '')
         if signed and not signed.startswith('http'):
-            signed = SUPABASE_URL + signed
+            # Ensure /storage/v1 prefix is present
+            if signed.startswith('/object/'):
+                signed = SUPABASE_URL + '/storage/v1' + signed
+            else:
+                signed = SUPABASE_URL + signed
         if p:
             result[p] = signed
     return result
