@@ -182,9 +182,8 @@ def login():
 
 
 @app.route('/api/debug')
-@require_auth
 def debug_info():
-    """Shows server config state for debugging (auth required)."""
+    """Shows server config state for debugging — no auth needed for diagnostics."""
     import sys
     sb_ok = False
     sb_err = None
@@ -196,16 +195,17 @@ def debug_info():
         except Exception as e:
             sb_err = str(e)
     return jsonify({
-        'use_supabase':   USE_SUPABASE,
-        'supabase_ok':    sb_ok,
-        'supabase_error': sb_err,
-        'supabase_url':   SUPABASE_URL[:40] + '...' if SUPABASE_URL else '',
-        'supabase_key':   SUPABASE_KEY[:12] + '...' if SUPABASE_KEY else '',
+        'use_supabase':    USE_SUPABASE,
+        'supabase_ok':     sb_ok,
+        'supabase_error':  sb_err,
+        'supabase_url':    SUPABASE_URL[:40] + '...' if SUPABASE_URL else 'NOT SET',
+        'supabase_key':    SUPABASE_KEY[:12] + '...' if SUPABASE_KEY else 'NOT SET',
         'supabase_bucket': SUPABASE_BUCKET,
-        'login_user_set': bool(os.environ.get('LOGIN_USER')),
-        'login_pass_set': bool(os.environ.get('LOGIN_PASS')),
-        'is_vercel':      IS_VERCEL,
-        'python':         sys.version,
+        'login_user_set':  bool(os.environ.get('LOGIN_USER')),
+        'login_pass_set':  bool(os.environ.get('LOGIN_PASS')),
+        'secret_key_set':  bool(os.environ.get('SECRET_KEY')),
+        'is_vercel':       IS_VERCEL,
+        'python':          sys.version,
     })
 
 @app.route('/favicon.ico')
