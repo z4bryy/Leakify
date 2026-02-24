@@ -358,7 +358,11 @@ function applyFilter() {
 
   filteredSongs = allSongs.filter(s => {
     const matchArtist = artistFilter === 'all' || s.artist === artistFilter;
-    const matchSearch = !searchTerm || s.display.toLowerCase().includes(searchTerm) || s.artist.toLowerCase().includes(searchTerm);
+    const matchSearch = !searchTerm ||
+      s.display.toLowerCase().includes(searchTerm) ||
+      s.artist.toLowerCase().includes(searchTerm) ||
+      (s.tag && s.tag.toLowerCase() === searchTerm) ||
+      (s.subfolder && s.subfolder.toLowerCase().includes(searchTerm));
     return matchArtist && matchSearch;
   });
 
@@ -658,10 +662,27 @@ function openFPO() {
   fpoOpen = true;
   fpo.classList.add('open');
   fpo.style.transform = '';
+  // Show only the 'Playing' button as active while FPO is open
+  $$('.bnav-btn').forEach(b => b.classList.remove('active'));
+  const bp = $('bnav-player');
+  if (bp) bp.classList.add('active');
 }
 function closeFPO() {
   fpoOpen = false;
   fpo.classList.remove('open');
+  const bp = $('bnav-player');
+  if (bp) bp.classList.remove('active');
+  // Re-activate whichever underlying tab is currently visible
+  const tabVault = $('tab-vault');
+  const tab999   = $('tab-999');
+  const tabHome  = $('tab-home');
+  if (tabVault && !tabVault.classList.contains('hidden')) {
+    $('bnav-vault')?.classList.add('active');
+  } else if (tab999 && !tab999.classList.contains('hidden')) {
+    $('bnav-999')?.classList.add('active');
+  } else {
+    $('bnav-home')?.classList.add('active');
+  }
 }
 
 // Swipe-down-to-close gesture (iOS native feel)
@@ -784,18 +805,45 @@ function setupAllEvents() {
   });
 
   // Progress bar seek
-  fpoProgressBar.addEventListener('mousedown', (e) => { isSeeking = true; seekAt(e); });
-  fpoProgressBar.addEventListener('touchstart', (e) => { isSeeking = true; seekAt(e); }, { passive: true });
+  fpoProgressBar.addEventListener('mousedown', (e) => {
+    isSeeking = true;
+    fpoProgressBar.classList.add('seeking');
+    seekAt(e);
+  });
+  fpoProgressBar.addEventListener('touchstart', (e) => {
+    isSeeking = true;
+    fpoProgressBar.classList.add('seeking');
+    seekAt(e);
+  }, { passive: true });
   window.addEventListener('mousemove', (e) => { if (isSeeking) seekAt(e); });
   window.addEventListener('touchmove', (e) => { if (isSeeking) seekAt(e); }, { passive: true });
-  window.addEventListener('mouseup',  () => { isSeeking = false; });
-  window.addEventListener('touchend', () => { isSeeking = false; });
+  window.addEventListener('mouseup', () => {
+    if (isSeeking) {
+      isSeeking = false;
+      fpoProgressBar.classList.remove('seeking');
+    }
+  });
+  window.addEventListener('touchend', () => {
+    if (isSeeking) {
+      isSeeking = false;
+      fpoProgressBar.classList.remove('seeking');
+    }
+  });
 
   // Search toggle
   searchToggle.addEventListener('click', () => {
+    const wasOpen = searchBarWrap.classList.contains('open');
     searchBarWrap.classList.toggle('open');
-    if (searchBarWrap.classList.contains('open')) {
+    if (!wasOpen) {
+      // Opening — focus
       setTimeout(() => searchInput.focus(), 350);
+    } else {
+      // Closing — clear search so vault shows all songs
+      if (searchInput.value) {
+        searchInput.value = '';
+        searchClear.classList.add('hidden');
+        applyFilter();
+      }
     }
   });
   searchInput.addEventListener('input', () => {
@@ -836,10 +884,17 @@ function setupAllEvents() {
   // Keyboard shortcuts (desktop)
   document.addEventListener('keydown', (e) => {
     if (e.target.tagName === 'INPUT') return;
-    if (e.code === 'Space')       { e.preventDefault(); togglePlay(); }
-    if (e.code === 'ArrowRight')  { e.preventDefault(); nextSong(); }
-    if (e.code === 'ArrowLeft')   { e.preventDefault(); prevSong(); }
+    // Space or K = play/pause
+    if (e.code === 'Space' || e.code === 'KeyK') { e.preventDefault(); togglePlay(); }
+    if (e.code === 'ArrowRight' || e.code === 'KeyL') { e.preventDefault(); nextSong(); }
+    if (e.code === 'ArrowLeft'  || e.code === 'KeyJ') { e.preventDefault(); prevSong(); }
     if (e.code === 'Escape' && fpoOpen) closeFPO();
+    // M = mute/unmute
+    if (e.code === 'KeyM') {
+      audio.muted = !audio.muted;
+      if (volumeSlider) volumeSlider.style.opacity = audio.muted ? '0.4' : '1';
+      if (npbVolume)    npbVolume.style.opacity    = audio.muted ? '0.4' : '1';
+    }
   });
 
   // iOS: prevent bounce scroll on body
@@ -1080,6 +1135,15 @@ function switchToVaultAndFilter(artist, tag) {
   tabVault  && tabVault.classList.remove('hidden');
 
   if (artist && artist !== 'all') {
+    // Clear any active search when switching to an artist filter
+    const si = $('search-input');
+    if (si && si.value) {
+      si.value = '';
+      const sc = $('search-clear');
+      if (sc) sc.classList.add('hidden');
+      const sbw = $('search-bar-wrap');
+      if (sbw) sbw.classList.remove('open');
+    }
     // Click the matching artist pill
     const pills = document.querySelectorAll('#pills-inner .pill');
     pills.forEach(p => {
@@ -1087,17 +1151,20 @@ function switchToVaultAndFilter(artist, tag) {
       if (p.dataset.artist === artist) p.classList.add('active');
     });
   } else if (tag) {
-    // Reset to "all" pill and set search to the tag keyword
+    // Reset to "all" pill and set search to the tag keyword (matches by tag property in applyFilter)
     const allPill = document.querySelector('#pills-inner .pill[data-artist="all"]');
     if (allPill) {
       document.querySelectorAll('#pills-inner .pill').forEach(p => p.classList.remove('active'));
       allPill.classList.add('active');
     }
-    const searchInput = $('search-input');
-    if (searchInput) {
-      searchInput.value = tag;
-      const searchClear = $('search-clear');
-      if (searchClear) searchClear.classList.remove('hidden');
+    const si = $('search-input');
+    if (si) {
+      si.value = tag;
+      const sc = $('search-clear');
+      if (sc) sc.classList.remove('hidden');
+      // Open the search bar so the user can see the filter is active
+      const sbw = $('search-bar-wrap');
+      if (sbw) sbw.classList.add('open');
     }
   }
   applyFilter();
