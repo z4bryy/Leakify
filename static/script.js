@@ -300,6 +300,7 @@ function startVideoScreen(onComplete) {
   // Loading bar follows video progress
   introVideo.addEventListener('timeupdate', onVideoProgress);
   introVideo.addEventListener('ended', onVideoEnd);
+  introVideo.addEventListener('error', onVideoError, { once: true });
   videoSkipBtn.addEventListener('click', skipVideo, { once: true });
 
   // Video has muted+autoplay attrs — it will always start.
@@ -318,6 +319,14 @@ function startVideoScreen(onComplete) {
         videoSkipBtn.classList.remove('hidden');
         simulateFakeLoadBar();
       });
+  }
+
+  function onVideoError() {
+    // Video failed to load/play — skip immediately without showing black screen
+    clearTimeout(skipTimer);
+    cleanup();
+    if (onComplete) onComplete();
+    else transitionToPlayer();
   }
 
   function onVideoProgress() {
@@ -344,6 +353,7 @@ function startVideoScreen(onComplete) {
     clearTimeout(skipTimer);
     introVideo.removeEventListener('timeupdate', onVideoProgress);
     introVideo.removeEventListener('ended', onVideoEnd);
+    introVideo.removeEventListener('error', onVideoError);
     videoLoadBar.style.width = '100%';
   }
 
