@@ -23,10 +23,11 @@ self.addEventListener('activate', (event) => {
 });
 
 self.addEventListener('fetch', (event) => {
-  // For audio and video, always go to network
+  // For audio and video, always go to network (never cache)
   if (
     event.request.url.includes('/play/') ||
-    event.request.url.includes('/video/')
+    event.request.url.includes('/video/') ||
+    event.request.url.includes('/static/videos/')
   ) {
     event.respondWith(fetch(event.request));
     return;

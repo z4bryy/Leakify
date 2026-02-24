@@ -177,8 +177,8 @@ def play(filename):
 
 @app.route('/video/<path:filename>')
 def serve_video(filename):
-    """Stream video file"""
-    return send_from_directory(VIDEO_FOLDER, filename)
+    """Stream video file with range-request support"""
+    return send_from_directory(VIDEO_FOLDER, filename, conditional=True)
 
 if __name__ == '__main__':
     app.run(debug=True, host='0.0.0.0', port=5000)

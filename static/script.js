@@ -216,6 +216,10 @@ if ('serviceWorker' in navigator) {
 //  BOOT — 999 Loader → Login
 // ══════════════════════════════════════════
 window.addEventListener('DOMContentLoaded', () => {
+  // Ensure video screen is visible immediately (safety net for CSS timing)
+  screenVideo.style.display = 'flex';
+  screenVideo.style.opacity = '1';
+
   setupAllEvents();
   const initVol = (volumeSlider.value || 80) / 100;
   audio.volume = initVol;
