@@ -3071,3 +3071,300 @@ body {
     text-decoration-color: rgba(191,90,242,0.4);
   }
 }
+
+/* ═══════════════════════════════════════════
+   NEXT LEVEL — Visualizer · Likes · Recent
+   Sleep Timer · Queue Panel · Tab Swipe
+═══════════════════════════════════════════ */
+
+/* ── Spectrum Visualizer Canvas ── */
+.fpo-visualizer {
+  width: 100%;
+  height: 52px;
+  display: block;
+  border-radius: 10px;
+  margin: 4px 0 10px;
+  opacity: 0.82;
+  transition: opacity 0.4s var(--ease);
+  flex-shrink: 0;
+  pointer-events: none;
+}
+
+/* ── Heart / Like Button on Track Cards ── */
+.track-card-heart {
+  flex-shrink: 0;
+  width: 34px; height: 34px;
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: var(--text-3);
+  display: flex; align-items: center; justify-content: center;
+  border-radius: 50%;
+  transition: color 0.2s, transform 0.2s var(--ease-bounce);
+  margin-right: 2px;
+  padding: 0;
+}
+.track-card-heart svg { width: 16px; height: 16px; pointer-events: none; }
+.track-card-heart:active { transform: scale(0.82); }
+.track-card-heart.liked { color: var(--pink); }
+.track-card-heart.liked svg { filter: drop-shadow(0 0 6px rgba(255,55,95,0.7)); }
+@media (hover: hover) {
+  .track-card-heart:hover { color: var(--pink); background: rgba(255,55,95,0.1); }
+}
+
+/* ── Heart "liked" state for whole card ── */
+.track-card.liked .track-card-heart { color: var(--pink); }
+
+/* ── Liked filter pill ── */
+.pill.pill-liked {
+  background: rgba(255,55,95,0.10);
+  border-color: rgba(255,55,95,0.35);
+  color: rgba(255,55,95,0.85);
+  font-weight: 700;
+  gap: 5px;
+}
+.pill.pill-liked.active {
+  background: linear-gradient(135deg, var(--pink), #ff6b85);
+  border-color: transparent;
+  color: #fff;
+}
+.pill.pill-liked svg { width: 13px; height: 13px; flex-shrink: 0; }
+
+/* ── Home section: liked heart icon ── */
+.hst-heart { color: var(--pink); vertical-align: middle; margin-right: 4px; flex-shrink: 0; }
+.home-section-title { display: flex; align-items: center; gap: 4px; }
+
+/* ── FPO Extra Row (Like · Sleep · Queue) ── */
+.fpo-extra-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-evenly;
+  gap: 8px;
+  margin-top: 16px;
+  padding: 12px 8px;
+  background: rgba(255,255,255,0.04);
+  border-radius: var(--radius-md);
+  border: 1px solid rgba(255,255,255,0.07);
+  flex-shrink: 0;
+}
+
+.fpo-extra-btn {
+  display: flex; flex-direction: column; align-items: center; gap: 4px;
+  background: none; border: none; cursor: pointer;
+  color: var(--text-3);
+  font-family: inherit; font-size: 10px; font-weight: 600; letter-spacing: 0.8px;
+  text-transform: uppercase;
+  padding: 10px 16px;
+  border-radius: var(--radius-md);
+  transition: background 0.2s, color 0.2s, transform 0.15s var(--ease-bounce);
+  min-width: 72px;
+}
+.fpo-extra-btn svg { width: 22px; height: 22px; }
+.fpo-extra-btn:active { transform: scale(0.9); background: rgba(255,255,255,0.07); }
+.fpo-extra-btn.liked { color: var(--pink); }
+.fpo-extra-btn.liked svg { filter: drop-shadow(0 0 8px rgba(255,55,95,0.7)); }
+.fpo-extra-btn.sleep-active { color: var(--purple); }
+.fpo-extra-btn.sleep-active svg { filter: drop-shadow(0 0 8px rgba(191,90,242,0.7)); }
+@media (hover: hover) {
+  .fpo-extra-btn:hover { background: rgba(255,255,255,0.07); color: var(--text-1); }
+}
+
+/* ── Sleep Timer Modal ── */
+.sleep-timer-modal {
+  position: fixed;
+  inset: 0;
+  z-index: 200;
+  display: flex; align-items: flex-end; justify-content: center;
+}
+.sleep-timer-modal.hidden { display: none; }
+
+.stm-backdrop {
+  position: absolute; inset: 0;
+  background: rgba(0,0,0,0.55);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  animation: stmFadeIn 0.25s var(--ease) both;
+}
+@keyframes stmFadeIn { from { opacity: 0; } to { opacity: 1; } }
+
+.stm-inner {
+  position: relative;
+  z-index: 1;
+  background: rgba(20, 4, 36, 0.96);
+  border: 1px solid rgba(191,90,242,0.28);
+  border-bottom: none;
+  border-radius: var(--radius-xl) var(--radius-xl) 0 0;
+  padding: 20px 20px max(calc(env(safe-area-inset-bottom) + 24px), 28px);
+  width: 100%; max-width: 480px;
+  animation: stmSlideUp 0.32s var(--ease-bounce) both;
+  box-shadow: 0 -20px 60px rgba(0,0,0,0.6), 0 0 0 0.5px rgba(191,90,242,0.2);
+}
+@keyframes stmSlideUp {
+  from { transform: translateY(100%); }
+  to   { transform: translateY(0); }
+}
+
+.stm-header {
+  display: flex; align-items: center; gap: 10px;
+  font-size: 15px; font-weight: 700; letter-spacing: 1px;
+  color: var(--text-1);
+  margin-bottom: 18px;
+  padding-bottom: 14px;
+  border-bottom: 1px solid rgba(255,255,255,0.08);
+}
+.stm-header svg { color: var(--purple); }
+
+.stm-options {
+  display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px;
+}
+
+.stm-btn {
+  padding: 14px 8px;
+  background: rgba(255,255,255,0.06);
+  border: 1px solid rgba(255,255,255,0.1);
+  border-radius: var(--radius-md);
+  color: var(--text-2);
+  font-family: inherit; font-size: 13px; font-weight: 600;
+  cursor: pointer;
+  transition: background 0.2s, color 0.2s, transform 0.15s var(--ease-bounce);
+}
+.stm-btn:active { transform: scale(0.93); }
+.stm-btn:hover { background: rgba(191,90,242,0.15); border-color: rgba(191,90,242,0.35); color: var(--purple-b); }
+.stm-btn.stm-cancel {
+  grid-column: span 3;
+  background: rgba(255,55,95,0.1); border-color: rgba(255,55,95,0.3); color: var(--pink);
+}
+.stm-btn.stm-active {
+  background: linear-gradient(135deg, rgba(191,90,242,0.25), rgba(255,55,95,0.15));
+  border-color: var(--purple); color: var(--purple-b);
+}
+
+/* ── Queue Panel ── */
+.queue-panel {
+  position: fixed;
+  bottom: 0; left: 0; right: 0;
+  z-index: 180;
+  background: rgba(12, 2, 22, 0.97);
+  border-top: 1px solid rgba(191,90,242,0.25);
+  border-radius: var(--radius-xl) var(--radius-xl) 0 0;
+  transform: translateY(100%);
+  transition: transform 0.38s var(--ease-bounce);
+  max-height: 60vh;
+  display: flex; flex-direction: column;
+  backdrop-filter: blur(40px);
+  -webkit-backdrop-filter: blur(40px);
+  box-shadow: 0 -12px 40px rgba(0,0,0,0.5);
+  padding-bottom: max(env(safe-area-inset-bottom), 0px);
+}
+.queue-panel.open { transform: translateY(0); }
+
+.qp-header {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 18px 20px 12px;
+  border-bottom: 1px solid rgba(255,255,255,0.07);
+  flex-shrink: 0;
+}
+.qp-title { font-size: 16px; font-weight: 800; letter-spacing: 2px; color: var(--text-1); }
+.qp-close {
+  width: 34px; height: 34px; background: rgba(255,255,255,0.07);
+  border: 1px solid rgba(255,255,255,0.1); border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  cursor: pointer; color: var(--text-2);
+  transition: background 0.2s;
+}
+.qp-close:active { background: rgba(191,90,242,0.2); color: var(--purple); }
+
+.qp-list {
+  overflow-y: auto;
+  flex: 1;
+  padding: 8px 0 12px;
+  scrollbar-width: none;
+}
+.qp-list::-webkit-scrollbar { display: none; }
+
+.qp-item {
+  display: flex; align-items: center; gap: 12px;
+  padding: 10px 20px;
+  cursor: pointer;
+  transition: background 0.2s;
+  border-radius: 0;
+}
+.qp-item:active { background: rgba(191,90,242,0.1); }
+.qp-item-num { font-size: 12px; color: var(--text-3); min-width: 20px; text-align: right; }
+.qp-item-info { flex: 1; min-width: 0; }
+.qp-item-name { font-size: 14px; font-weight: 600; color: var(--text-1); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.qp-item-sub  { font-size: 12px; color: var(--text-3); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.qp-item-play { flex-shrink: 0; color: var(--text-3); }
+.qp-item-play svg { width: 16px; height: 16px; }
+.qp-item.qp-now { background: rgba(191,90,242,0.12); }
+.qp-item.qp-now .qp-item-name { color: var(--purple-b); }
+
+/* ── Home section recent/liked rows ── */
+.home-section[id^="home-liked"],
+.home-section[id^="home-recent"] {
+  animation: tabFadeIn 0.4s var(--ease) both;
+}
+
+/* ── Like pulse animation ── */
+@keyframes heartPop {
+  0%   { transform: scale(1); }
+  35%  { transform: scale(1.45); }
+  70%  { transform: scale(0.88); }
+  100% { transform: scale(1); }
+}
+.track-card-heart.pop { animation: heartPop 0.35s var(--ease-bounce) both; }
+.fpo-extra-btn.pop    { animation: heartPop 0.35s var(--ease-bounce) both; }
+
+/* ── Sleep timer countdown badge ── */
+.sleep-countdown {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+  color: var(--purple);
+  line-height: 1;
+}
+
+/* ── Recently Played section on home tab ── */
+#home-recent-section .home-see-all { 
+  color: rgba(255,55,95,0.65); 
+  font-size: 11px; 
+}
+#home-recent-section .home-see-all:hover { color: var(--pink); }
+
+/* ── Queue panel backdrop ── */
+.queue-backdrop {
+  position: fixed; inset: 0;
+  z-index: 179;
+  background: rgba(0,0,0,0);
+  pointer-events: none;
+  transition: background 0.3s;
+}
+.queue-backdrop.active {
+  background: rgba(0,0,0,0.4);
+  pointer-events: auto;
+}
+
+/* ── Track card: ensure heart btn fits in layout ── */
+.track-card {
+  /* already set — just ensure align-items: center is there */
+}
+
+/* ── FPO content overflow fix for extra row ── */
+.fpo-content {
+  padding-bottom: 8px !important;
+}
+
+/* ── Visualizer idle (no audio): dim ── */
+.fpo-visualizer.idle { opacity: 0.25; }
+
+/* ── Track card: tighter gap on very narrow screens ── */
+@media (max-width: 380px) {
+  .track-card { gap: 10px; padding: 10px 12px; }
+  .track-card-heart { width: 28px; height: 28px; }
+  .track-card-heart svg { width: 14px; height: 14px; }
+}
+
+/* ── Track tag: hide on tiny show only current pill + heart ── */
+@media (max-width: 340px) {
+  .track-card .track-tag { display: none; }
+}
