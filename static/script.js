@@ -279,41 +279,42 @@ function setupLoginEvents() {
 // ══════════════════════════════════════════
 // onComplete: optional callback called when video ends/is skipped
 function startVideoScreen(onComplete) {
-  showScreen(screenVideo);
+  // Only call showScreen if the video screen isn't already displayed
+  // (at boot it's already .active — calling showScreen causes a black flash)
+  if (!screenVideo.classList.contains('active')) {
+    showScreen(screenVideo);
+  }
 
   // Setup video
   introVideo.currentTime = 0;
-  introVideo.volume    = 1;
 
-  // Show skip after 3s
+  // Show skip after 1.5s (safety net for any playback issue)
   let skipTimer = setTimeout(() => {
     videoSkipBtn.classList.remove('hidden');
-  }, 3000);
+  }, 1500);
 
   // Loading bar follows video progress
   introVideo.addEventListener('timeupdate', onVideoProgress);
   introVideo.addEventListener('ended', onVideoEnd);
   videoSkipBtn.addEventListener('click', skipVideo, { once: true });
 
-  // Safari/iOS: start muted so autoplay is guaranteed, unmute immediately after
-  introVideo.muted = false;
-  introVideo.play()
-    .then(() => {
-      // Unmute succeeded — keep volume on
-      introVideo.muted = false;
-    })
-    .catch(() => {
-      // Unmuted autoplay blocked — try muted first then flip
-      introVideo.muted = true;
-      introVideo.play()
-        .then(() => { introVideo.muted = false; })
-        .catch(() => {
-          // Fully blocked — show skip and fake bar
-          clearTimeout(skipTimer);
-          videoSkipBtn.classList.remove('hidden');
-          simulateFakeLoadBar();
-        });
-    });
+  // Video has muted+autoplay attrs — it will always start.
+  // Unmute it immediately so user hears audio (browsers allow unmuting after interaction-free autoplay)
+  const playPromise = introVideo.play();
+  if (playPromise !== undefined) {
+    playPromise
+      .then(() => {
+        // Autoplay started — unmute
+        introVideo.muted = false;
+        introVideo.volume = 1;
+      })
+      .catch(() => {
+        // Autoplay fully blocked (very rare with muted attr) — show skip immediately
+        clearTimeout(skipTimer);
+        videoSkipBtn.classList.remove('hidden');
+        simulateFakeLoadBar();
+      });
+  }
 
   function onVideoProgress() {
     if (introVideo.duration) {
