@@ -14,6 +14,7 @@ let shuffle       = false;
 let repeat        = false;
 let fpoOpen       = false;
 let isSeeking     = false;
+let playHistory   = []; // stack of previously-played indices for proper prev navigation
 
 // ── Update toast ─────────────────────────────
 function showUpdateToast(msg, isError) {
@@ -253,7 +254,9 @@ function setupLoginEvents() {
       });
       const data = await res.json();
       if (data.ok) {
-        // Splash video already played — go straight to player
+        // Clear credential fields from DOM before entering the app
+        loginUser.value = '';
+        loginPass.value = '';
         setTimeout(() => showPlayer(), 300);
       } else {
         loginError.classList.remove('hidden');
@@ -297,11 +300,6 @@ function startLoaderScreen() {
   }, 2600);
 }
 
-// ── (legacy stub — kept to avoid any stray calls) ──
-function startVideoScreen(onComplete) {
-  if (onComplete) onComplete();
-}
-
 // ══════════════════════════════════════════
 //  PLAYER ENTRY
 // ══════════════════════════════════════════
@@ -316,8 +314,14 @@ function showPlayer() {
 async function loadLibrary() {
   try {
     const res  = await fetch('/api/songs');
+    // If session expired server-side, bounce back to login
+    if (res.status === 401) {
+      showScreen(screenLogin);
+      return;
+    }
     const data = await res.json();
-    allSongs   = data.songs || [];
+    allSongs     = data.songs || [];
+    playHistory  = []; // reset play history whenever the library reloads
     buildPills();
     applyFilter();
     // Update 999 tab stat counter
@@ -464,8 +468,13 @@ function escHtml(str) {
 // ══════════════════════════════════════════
 //  PLAYBACK
 // ══════════════════════════════════════════
-function playSong(idx) {
+function playSong(idx, skipHistory = false) {
   if (idx < 0 || idx >= filteredSongs.length) return;
+  // Push current track to history so prev can go back (capped at 50 entries)
+  if (!skipHistory && currentIndex !== -1 && currentIndex !== idx) {
+    playHistory.push(currentIndex);
+    if (playHistory.length > 50) playHistory.shift();
+  }
   currentIndex = idx;
   const song = filteredSongs[idx];
 
@@ -599,22 +608,23 @@ function togglePlay() {
 
 function prevSong() {
   if (!filteredSongs.length) return;
-  if (shuffle) {
-    currentIndex = Math.floor(Math.random() * filteredSongs.length);
+  // If we have history, go back to the actual last-played track (Spotify-style)
+  if (playHistory.length > 0) {
+    playSong(playHistory.pop(), true); // skipHistory — already popping the stack
+  } else if (shuffle) {
+    playSong(Math.floor(Math.random() * filteredSongs.length));
   } else {
-    currentIndex = (currentIndex - 1 + filteredSongs.length) % filteredSongs.length;
+    playSong((currentIndex - 1 + filteredSongs.length) % filteredSongs.length);
   }
-  playSong(currentIndex);
 }
 
 function nextSong() {
   if (!filteredSongs.length) return;
   if (shuffle) {
-    currentIndex = Math.floor(Math.random() * filteredSongs.length);
+    playSong(Math.floor(Math.random() * filteredSongs.length));
   } else {
-    currentIndex = (currentIndex + 1) % filteredSongs.length;
+    playSong((currentIndex + 1) % filteredSongs.length);
   }
-  playSong(currentIndex);
 }
 
 function updatePlayButtons(playing) {
@@ -1110,10 +1120,11 @@ function renderHomePreviewList(containerId, tag, limit) {
       </button>
     `;
     row.addEventListener('click', () => {
-      // Add song to filteredSongs and play
+      // Scope playback to the same tag, and sync the vault list so next/prev stays consistent
       filteredSongs = allSongs.filter(s => s.tag && s.tag.toLowerCase() === tag);
       const idx = filteredSongs.findIndex(s => s.filename === song.filename);
       playSong(idx >= 0 ? idx : 0);
+      renderSongs(); // keep vault DOM in sync with the new filteredSongs
     });
     container.appendChild(row);
   });

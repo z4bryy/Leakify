@@ -1,7 +1,10 @@
-from flask import Flask, jsonify, send_from_directory, render_template, request, redirect
+from flask import Flask, jsonify, send_from_directory, render_template, request, redirect, session
 from urllib.parse import quote as urlquote
+from collections import defaultdict
+from functools import wraps
 import os
 import hmac
+import secrets
 
 # Vercel does NOT pull Git LFS objects — serve audio from GitHub's LFS CDN instead.
 # Set AUDIO_BASE_URL env var to override (e.g. for a different CDN).
@@ -12,6 +15,20 @@ GITHUB_LFS_BASE = os.environ.get(
 )
 
 app = Flask(__name__)
+
+# Secret key for session cookies. Override with a stable SECRET_KEY env var in production;
+# falling back to a random key means sessions reset on every server restart (fine for dev).
+app.secret_key = os.environ.get('SECRET_KEY') or secrets.token_hex(32)
+
+# ── Auth helpers ──────────────────────────────────────────
+def require_auth(f):
+    """Decorator: return 401 JSON if the user is not logged in."""
+    @wraps(f)
+    def wrapper(*args, **kwargs):
+        if not session.get('authed'):
+            return jsonify({'error': 'Unauthorized'}), 401
+        return f(*args, **kwargs)
+    return wrapper
 
 MUSIC_FOLDER = 'Leakify-music-src'
 VIDEO_FOLDER = os.path.join('static', 'videos')
@@ -41,7 +58,7 @@ except OSError:
 def generate_icons():
     try:
         from PIL import Image, ImageDraw
-        for size in [192, 512]:
+        for size in [192, 512, 1024]:
             path = os.path.join('static', f'icon-{size}.png')
             if not os.path.exists(path):
                 img = Image.new('RGB', (size, size), color=(6, 0, 8))
@@ -59,12 +76,16 @@ generate_icons()
 @app.route('/api/login', methods=['POST'])
 def login():
     """Server-side credential check — credentials live in env vars, never in client JS."""
-    expected_user = os.environ.get('LOGIN_USER', 'z4bry87')
-    expected_pass = os.environ.get('LOGIN_PASS', 'MkZ808999')
+    expected_user = os.environ.get('LOGIN_USER', '')
+    expected_pass = os.environ.get('LOGIN_PASS', '')
+    if not expected_user or not expected_pass:
+        # Env vars not set — reject all logins rather than letting a blank password through
+        return jsonify({'ok': False, 'error': 'Server not configured'}), 503
     data = request.get_json(silent=True) or {}
     user_ok = hmac.compare_digest(data.get('user', ''), expected_user)
     pass_ok = hmac.compare_digest(data.get('pass', ''), expected_pass)
     if user_ok and pass_ok:
+        session['authed'] = True
         return jsonify({'ok': True})
     return jsonify({'ok': False}), 401
 
@@ -91,6 +112,7 @@ def service_worker():
     return response
 
 @app.route('/api/songs')
+@require_auth
 def get_songs():
     """Get all songs from the music library with smart deduplication.
     
@@ -142,7 +164,6 @@ def get_songs():
     # ── Deduplication (per artist) ──────────────────────────────────────
     # For each artist, keep the highest-priority version of each track.
     # Two tracks are "the same" if their normalised display name matches.
-    from collections import defaultdict
     by_artist = defaultdict(list)
     for s in raw:
         by_artist[s["artist"]].append(s)
@@ -177,6 +198,7 @@ def get_songs():
     return jsonify({"songs": songs, "count": len(songs)})
 
 @app.route('/play/<path:filename>')
+@require_auth
 def play(filename):
     """Stream audio file"""
     return send_from_directory(MUSIC_FOLDER, filename)

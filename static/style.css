@@ -385,101 +385,6 @@ body {
 }
 
 /* ─────────────────────────────
-   VIDEO SCREEN
-───────────────────────────── */
-#screen-video {
-  background: #000;
-  align-items: center;
-  justify-content: center;
-  overflow: hidden;
-}
-
-#intro-video {
-  position: absolute;
-  inset: 0;
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  z-index: 1;
-}
-
-.video-overlay {
-  position: absolute;
-  inset: 0;
-  z-index: 2;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: flex-end;
-  padding-bottom: max(40px, env(safe-area-inset-bottom) + 32px);
-  background: linear-gradient(to top, rgba(0,0,0,0.7) 0%, transparent 50%);
-}
-
-.video-logo { text-align: center; margin-bottom: 24px; }
-.video-logo-text {
-  display: block;
-  font-size: 28px;
-  font-weight: 900;
-  letter-spacing: 10px;
-  background: linear-gradient(135deg, #BF5AF2, #FF375F);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  animation: glow999 2s ease-in-out infinite alternate;
-}
-@keyframes glow999 {
-  from { filter: drop-shadow(0 0 8px rgba(191,90,242,0.5)); }
-  to   { filter: drop-shadow(0 0 24px rgba(255,55,95,0.7)); }
-}
-.video-logo-bar {
-  height: 2px;
-  background: linear-gradient(90deg, transparent, #BF5AF2, #FF375F, transparent);
-  margin-top: 8px;
-  animation: widthPulse 2s ease-in-out infinite;
-}
-@keyframes widthPulse {
-  0%,100% { width: 40%; margin-left: 30%; }
-  50%     { width: 80%; margin-left: 10%; }
-}
-
-.video-loading-bar-wrap {
-  width: min(240px, 60vw);
-  height: 3px;
-  background: rgba(255,255,255,0.15);
-  border-radius: 99px;
-  overflow: hidden;
-  margin-bottom: 20px;
-}
-.video-loading-bar {
-  height: 100%;
-  width: 0%;
-  background: linear-gradient(90deg, var(--purple), var(--pink));
-  border-radius: 99px;
-  transition: width 0.3s linear;
-}
-
-.video-skip-btn {
-  background: rgba(255,255,255,0.12);
-  border: 1px solid rgba(255,255,255,0.2);
-  color: rgba(255,255,255,0.85);
-  font-family: inherit;
-  font-size: 11px;
-  font-weight: 700;
-  letter-spacing: 2px;
-  padding: 10px 22px;
-  border-radius: 99px;
-  cursor: pointer;
-  backdrop-filter: blur(12px);
-  transition: background 0.2s, transform 0.2s;
-  animation: fadeInUp 0.5s var(--ease) both;
-}
-.video-skip-btn.hidden { display: none; }
-.video-skip-btn:active { transform: scale(0.95); background: rgba(255,255,255,0.2); }
-@keyframes fadeInUp {
-  from { opacity: 0; transform: translateY(16px); }
-  to   { opacity: 1; transform: translateY(0); }
-}
-
-/* ─────────────────────────────
    PLAYER SCREEN
 ───────────────────────────── */
 #screen-player {
@@ -2827,6 +2732,23 @@ body {
   flex-shrink: 0;
 }
 .home-preview-song .hps-play svg { width: 15px; height: 15px; }
+.home-preview-song .hps-play:active {
+  background: rgba(191,90,242,0.18);
+  color: var(--purple);
+}
+
+/* ── Visually-hidden class for screen-reader-only content ── */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0,0,0,0);
+  white-space: nowrap;
+  border: 0;
+}
 
 /* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
    999 TAB ADDITIONS

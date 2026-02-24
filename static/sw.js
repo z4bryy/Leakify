@@ -1,4 +1,4 @@
-const CACHE_NAME = 'leakify-v4-polished';
+const CACHE_NAME = 'leakify-v5-security';
 const STATIC_ASSETS = [
   '/',
   '/static/style.css',
@@ -23,16 +23,30 @@ self.addEventListener('activate', (event) => {
 });
 
 self.addEventListener('fetch', (event) => {
-  // For audio and video, always go to network (never cache)
+  const url = event.request.url;
+
+  // Always network-only: audio, video, API endpoints (never stale-cache auth)
   if (
-    event.request.url.includes('/play/') ||
-    event.request.url.includes('/video/') ||
-    event.request.url.includes('/static/videos/')
+    url.includes('/play/') ||
+    url.includes('/video/') ||
+    url.includes('/static/videos/') ||
+    url.includes('/api/')
   ) {
     event.respondWith(fetch(event.request));
     return;
   }
+
+  // Cache-first for static assets, but only store genuine 200 OK responses
   event.respondWith(
-    caches.match(event.request).then((cached) => cached || fetch(event.request))
+    caches.match(event.request).then((cached) => {
+      if (cached) return cached;
+      return fetch(event.request).then((response) => {
+        if (response && response.status === 200 && response.type === 'basic') {
+          const toCache = response.clone();
+          caches.open(CACHE_NAME).then((cache) => cache.put(event.request, toCache));
+        }
+        return response;
+      });
+    })
   );
 });

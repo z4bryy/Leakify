@@ -3,11 +3,18 @@ echo ========================================
 echo   LEAKIFY — JuiceWrld Music Vault
 echo ========================================
 echo.
-echo  1. Place juicewrld.mp4 in: static\videos\
-echo  2. Place MP3 files in:     Leakify-music-src\<ArtistName>\
-echo  3. Open http://localhost:5000 in browser
-echo  4. On iPhone: Safari -> Share -> Add to Home Screen
+echo  1. Place MP3 files in:     Leakify-music-src\<ArtistName>\
+echo  2. Open http://localhost:5000 in browser
+echo  3. On iPhone: Safari -> Share -> Add to Home Screen
 echo.
+
+REM ── Credentials (change these or set them as system env vars before running) ──
+if "%LOGIN_USER%"=="" set LOGIN_USER=z4bry87
+if "%LOGIN_PASS%"=="" set LOGIN_PASS=MkZ808999
+
+REM ── Optional: generate a stable secret key so sessions survive reloads ──
+if "%SECRET_KEY%"=="" set SECRET_KEY=change-me-to-a-random-secret-in-production
+
 echo Starting server on http://0.0.0.0:5000 ...
 echo.
 if exist .venv\Scripts\python.exe (
