@@ -125,8 +125,9 @@ def get_songs():
             display_name = os.path.splitext(file)[0]
 
             # Determine priority & tag
+            # Songs not in a recognized subfolder are still unreleased/leaked content
             sub_key  = sub_parts[0].strip().lower() if sub_parts else ""
-            pri, tag = SUBFOLDER_PRIORITY.get(sub_key, (0, ""))
+            pri, tag = SUBFOLDER_PRIORITY.get(sub_key, (0, "LEAKED"))
 
             raw.append({
                 "display":   display_name,

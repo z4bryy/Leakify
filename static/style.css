@@ -2519,6 +2519,7 @@ body {
   position: relative;
   box-shadow: 0 0 40px rgba(138,43,226,0.4), 0 0 80px rgba(191,90,242,0.18);
   animation: heroVinylSpin 12s linear infinite;
+  animation-play-state: paused;
 }
 @keyframes heroVinylSpin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
 
@@ -2528,8 +2529,8 @@ body {
   border: 1px solid rgba(191,90,242,0.25);
   pointer-events: none;
 }
-.home-vinyl-ring-1 { inset: -16px; animation: heroVinylSpin 18s linear infinite reverse; }
-.home-vinyl-ring-2 { inset: -30px; border-color: rgba(255,55,95,0.15); animation: heroVinylSpin 28s linear infinite; }
+.home-vinyl-ring-1 { inset: -16px; animation: heroVinylSpin 18s linear infinite reverse; animation-play-state: paused; }
+.home-vinyl-ring-2 { inset: -30px; border-color: rgba(255,55,95,0.15); animation: heroVinylSpin 28s linear infinite; animation-play-state: paused; }
 .home-vinyl-center {
   position: relative;
   z-index: 2;

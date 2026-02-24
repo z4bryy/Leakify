@@ -477,6 +477,16 @@ function playSong(idx) {
     });
 }
 
+// ── Home vinyl spin helper ──
+function setVinylSpin(playing) {
+  const wrap = $('home-hero-vinyl-wrap');
+  if (!wrap) return;
+  const state = playing ? 'running' : 'paused';
+  wrap.querySelectorAll('.home-hero-vinyl, .home-vinyl-ring-1, .home-vinyl-ring-2').forEach(el => {
+    el.style.animationPlayState = state;
+  });
+}
+
 function onPlayStart(song) {
   // Hero
   heroTrackName.textContent  = song.display;
@@ -484,6 +494,9 @@ function onPlayStart(song) {
   heroArt.classList.add('playing');
   heroGlow.classList.add('active');
   heroEq.classList.add('active');
+
+  // Home vinyl — spin when playing
+  setVinylSpin(true);
 
   // Mini bar
   applyMarquee(npbTitle, song.display);
@@ -566,6 +579,7 @@ function togglePlay() {
     fpoArt.classList.remove('playing');
     nowPlayingBar.classList.remove('playing');
     updatePlayButtons(false);
+    setVinylSpin(false);
   } else {
     audio.play().then(() => {
       isPlaying = true;
@@ -574,6 +588,7 @@ function togglePlay() {
       fpoArt.classList.add('playing');
       nowPlayingBar.classList.add('playing');
       updatePlayButtons(true);
+      setVinylSpin(true);
     });
   }
 }
@@ -805,15 +820,15 @@ function setupAllEvents() {
   // Update app — bust SW cache and hard reload
   updateBtn.addEventListener('click', async () => {
     updateBtn.disabled = true;
-    showUpdateToast('Aktualizuji…', false);
+    showUpdateToast('Updating…', false);
     try {
       if (swRegistration) await swRegistration.update();
       const keys = await caches.keys();
       await Promise.all(keys.map(k => caches.delete(k)));
-      showUpdateToast('Hotovo! Načítám novou verzi…', false);
+      showUpdateToast('Done! Reloading…', false);
       setTimeout(() => location.reload(true), 900);
     } catch {
-      showUpdateToast('Chyba aktualizace', true);
+      showUpdateToast('Update failed', true);
       updateBtn.disabled = false;
     }
   });
@@ -915,6 +930,13 @@ function renderHomeTab() {
   // ── Stat: total tracks ──
   const statTracks = $('home-stat-tracks');
   if (statTracks) statTracks.textContent = allSongs.length || '0';
+
+  // ── Stat: unique artists ──
+  const statArtists = $('home-stat-artists');
+  if (statArtists) {
+    const uniqueArtists = new Set(allSongs.map(s => s.artist)).size;
+    statArtists.textContent = uniqueArtists || '0';
+  }
 
   // ── Artist card counts ──
   const artistMap = {
