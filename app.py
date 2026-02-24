@@ -1,7 +1,10 @@
 from flask import Flask, jsonify, send_from_directory, render_template, request, redirect, session
 from urllib.parse import quote as urlquote
+from urllib.request import urlopen, Request
+from urllib.error import URLError
 from collections import defaultdict
 from functools import wraps
+import json
 import os
 import hmac
 import secrets
@@ -16,20 +19,72 @@ if os.path.exists(_env_path):
                 _k, _v = _line.split('=', 1)
                 os.environ.setdefault(_k.strip(), _v.strip())
 
-# Supabase Storage (primary audio source when env vars are set)
-SUPABASE_URL    = os.environ.get('SUPABASE_URL', '')
+# Supabase Storage — direct REST API (no SDK, works with all key formats)
+SUPABASE_URL    = os.environ.get('SUPABASE_URL', '').rstrip('/')
 SUPABASE_KEY    = os.environ.get('SUPABASE_SERVICE_KEY', '')
 SUPABASE_BUCKET = os.environ.get('SUPABASE_BUCKET', 'JuiceWrld')
 SUPABASE_SIGNED_URL_TTL = 3600  # 1 hour
 
-supabase_client = None
-_supabase_error = None
-if SUPABASE_URL and SUPABASE_KEY:
-    try:
-        from supabase import create_client
-        supabase_client = create_client(SUPABASE_URL, SUPABASE_KEY)
-    except Exception as e:
-        _supabase_error = str(e)  # log reason, fall back to GitHub LFS / local
+USE_SUPABASE = bool(SUPABASE_URL and SUPABASE_KEY)
+
+def _sb_headers():
+    return {
+        'Authorization': f'Bearer {SUPABASE_KEY}',
+        'apikey': SUPABASE_KEY,
+        'Content-Type': 'application/json',
+    }
+
+def _sb_list(prefix=''):
+    """List files/folders in bucket at given prefix via REST."""
+    url = f'{SUPABASE_URL}/storage/v1/object/list/{SUPABASE_BUCKET}'
+    body = json.dumps({
+        'prefix': prefix,
+        'limit': 1000,
+        'offset': 0,
+        'sortBy': {'column': 'name', 'order': 'asc'},
+    }).encode()
+    req = Request(url, data=body, headers=_sb_headers(), method='POST')
+    with urlopen(req, timeout=15) as r:
+        return json.loads(r.read())
+
+def _sb_list_recursive(prefix=''):
+    """Recursively list all audio files; returns list of bucket-relative paths."""
+    AUDIO_EXTS = {'.mp3', '.m4a', '.wav', '.flac', '.ogg'}
+    items = _sb_list(prefix)
+    results = []
+    for item in items:
+        name = item.get('name', '')
+        if name == '.emptyFolderPlaceholder':
+            continue
+        full = f"{prefix}/{name}" if prefix else name
+        if item.get('id') is None:
+            # folder — recurse
+            results.extend(_sb_list_recursive(full))
+        else:
+            ext = os.path.splitext(name)[1].lower()
+            if ext in AUDIO_EXTS:
+                results.append(full)
+    return results
+
+def _sb_signed_urls(paths):
+    """Batch-generate signed URLs; returns dict {path: signedURL}."""
+    url = f'{SUPABASE_URL}/storage/v1/object/sign/{SUPABASE_BUCKET}'
+    body = json.dumps({'paths': paths, 'expiresIn': SUPABASE_SIGNED_URL_TTL}).encode()
+    req = Request(url, data=body, headers=_sb_headers(), method='POST')
+    with urlopen(req, timeout=20) as r:
+        items = json.loads(r.read())
+    result = {}
+    for item in items:
+        p = item.get('path', '')
+        # signedURL may be relative: /storage/v1/object/sign/...?token=...
+        signed = item.get('signedURL', '') or item.get('signedUrl', '')
+        if signed and not signed.startswith('http'):
+            signed = SUPABASE_URL + signed
+        if p:
+            result[p] = signed
+    return result
+
+_supabase_error = None  # populated if init-time test fails
 
 # Vercel fallback (GitHub LFS CDN) — used only if Supabase is not configured.
 IS_VERCEL = bool(os.environ.get('VERCEL'))
@@ -131,23 +186,26 @@ def login():
 def debug_info():
     """Shows server config state for debugging (auth required)."""
     import sys
-    supabase_ver = None
-    try:
-        import supabase as _sb
-        supabase_ver = getattr(_sb, '__version__', 'unknown')
-    except ImportError:
-        pass
+    sb_ok = False
+    sb_err = None
+    if USE_SUPABASE:
+        try:
+            items = _sb_list('')
+            sb_ok = True
+            sb_err = f'listed {len(items)} root items'
+        except Exception as e:
+            sb_err = str(e)
     return jsonify({
-        'supabase_client': supabase_client is not None,
-        'supabase_error':  _supabase_error,
-        'supabase_version': supabase_ver,
-        'supabase_url_set':  bool(SUPABASE_URL),
-        'supabase_key_set':  bool(SUPABASE_KEY),
-        'supabase_bucket':   SUPABASE_BUCKET,
-        'login_user_set':    bool(os.environ.get('LOGIN_USER')),
-        'login_pass_set':    bool(os.environ.get('LOGIN_PASS')),
-        'is_vercel':         IS_VERCEL,
-        'python':            sys.version,
+        'use_supabase':   USE_SUPABASE,
+        'supabase_ok':    sb_ok,
+        'supabase_error': sb_err,
+        'supabase_url':   SUPABASE_URL[:40] + '...' if SUPABASE_URL else '',
+        'supabase_key':   SUPABASE_KEY[:12] + '...' if SUPABASE_KEY else '',
+        'supabase_bucket': SUPABASE_BUCKET,
+        'login_user_set': bool(os.environ.get('LOGIN_USER')),
+        'login_pass_set': bool(os.environ.get('LOGIN_PASS')),
+        'is_vercel':      IS_VERCEL,
+        'python':         sys.version,
     })
 
 @app.route('/favicon.ico')
@@ -193,39 +251,21 @@ def get_songs():
     AUDIO_EXTS = {'.mp3', '.m4a', '.wav', '.flac', '.ogg'}
 
     # ── Supabase mode ────────────────────────────────────────────────────
-    if supabase_client:
-
-        def list_recursive(prefix=""):
-            """Return flat list of (bucket_path, name) for every audio file."""
-            items = supabase_client.storage.from_(SUPABASE_BUCKET).list(prefix) if prefix \
-                    else supabase_client.storage.from_(SUPABASE_BUCKET).list()
-            results = []
-            for item in items:
-                item_name = item['name']
-                if item_name == '.emptyFolderPlaceholder':
-                    continue
-                full_path = f"{prefix}/{item_name}" if prefix else item_name
-                if item.get('metadata') is None:
-                    # It's a folder — recurse
-                    results.extend(list_recursive(full_path))
-                else:
-                    ext = os.path.splitext(item_name)[1].lower()
-                    if ext in AUDIO_EXTS:
-                        results.append(full_path)
-            return results
-
-        all_paths = list_recursive()
+    if USE_SUPABASE:
+        try:
+            all_paths = _sb_list_recursive('')
+        except Exception as e:
+            all_paths = []
 
         raw = []
         for path in all_paths:
             parts = path.split('/')
             if len(parts) == 1:
-                # Root-level file → default artist is bucket name (all JuiceWrld)
                 artist    = SUPABASE_BUCKET
                 sub_parts = []
             else:
                 artist    = parts[0]
-                sub_parts = parts[1:-1]   # subfolders between artist and filename
+                sub_parts = parts[1:-1]
 
             filename     = parts[-1]
             display_name = os.path.splitext(filename)[0]
@@ -235,7 +275,7 @@ def get_songs():
 
             raw.append({
                 "display":   display_name,
-                "filename":  path,          # bucket-relative path for signed URL
+                "filename":  path,
                 "artist":    artist,
                 "subfolder": subfolder,
                 "tag":       tag,
@@ -243,7 +283,6 @@ def get_songs():
                 "_norm":     display_name.strip().lower(),
             })
 
-        # Dedup per artist (keep highest-priority version of same track name)
         by_artist = defaultdict(list)
         for s in raw:
             by_artist[s["artist"]].append(s)
@@ -267,29 +306,12 @@ def get_songs():
 
         songs.sort(key=lambda s: (s["artist"].lower(), s["display"].lower()))
 
-        # Batch signed URLs
-        paths = [s["filename"] for s in songs]
         try:
-            signed = supabase_client.storage.from_(SUPABASE_BUCKET).create_signed_urls(
-                paths, SUPABASE_SIGNED_URL_TTL
-            )
-            url_map = {}
-            for item in signed:
-                p = item.get("path") or item.get("path_token", "")
-                u = item.get("signedURL") or item.get("signedUrl", "")
-                if p:
-                    url_map[p] = u
+            url_map = _sb_signed_urls([s["filename"] for s in songs])
             for s in songs:
                 s["url"] = url_map.get(s["filename"], "")
         except Exception:
-            for s in songs:
-                try:
-                    res = supabase_client.storage.from_(SUPABASE_BUCKET).create_signed_url(
-                        s["filename"], SUPABASE_SIGNED_URL_TTL
-                    )
-                    s["url"] = res.get("signedURL") or res.get("signed_url", "")
-                except Exception:
-                    s["url"] = ""
+            pass
 
         return jsonify({"songs": songs, "count": len(songs)})
 
