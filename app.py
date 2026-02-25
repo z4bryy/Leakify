@@ -4,10 +4,12 @@ from urllib.request import urlopen, Request
 from urllib.error import URLError
 from collections import defaultdict
 from functools import wraps
+from datetime import timedelta
 import json
 import os
 import hmac
 import secrets
+import time
 
 # Load .env in local dev (no python-dotenv needed)
 _env_path = os.path.join(os.path.dirname(__file__), '.env')
@@ -107,11 +109,48 @@ app.secret_key = os.environ.get('SECRET_KEY') or secrets.token_hex(32)
 # On Vercel (HTTPS) the session cookie must be Secure + SameSite=Lax so the browser
 # sends it with fetch() requests. In local dev (HTTP) keep Secure=False.
 _is_prod = bool(os.environ.get('VERCEL') or os.environ.get('SESSION_SECURE'))
-app.config['SESSION_COOKIE_SECURE']   = _is_prod
-app.config['SESSION_COOKIE_HTTPONLY'] = True
-app.config['SESSION_COOKIE_SAMESITE'] = 'Lax'
+app.config['SESSION_COOKIE_SECURE']     = _is_prod
+app.config['SESSION_COOKIE_HTTPONLY']   = True
+app.config['SESSION_COOKIE_SAMESITE']   = 'Lax'
+app.config['SESSION_COOKIE_NAME']       = '_lx'
+app.config['PERMANENT_SESSION_LIFETIME'] = timedelta(hours=12)
+
+# ── IP-based brute-force protection ────────────────────────
+# {ip: {'count': int, 'locked_until': float, 'window_start': float}}
+_LOGIN_ATTEMPTS: dict = defaultdict(lambda: {'count': 0, 'locked_until': 0.0, 'window_start': 0.0})
+_MAX_ATTEMPTS    = 5     # failures before lockout
+_LOCKOUT_SECONDS = 60    # lockout duration in seconds
+_ATTEMPT_WINDOW  = 300   # rolling window; older failures are forgiven
+
+# ── Security response headers ───────────────────────────────
+@app.after_request
+def _add_security_headers(resp):
+    resp.headers['X-Frame-Options']           = 'DENY'
+    resp.headers['X-Content-Type-Options']    = 'nosniff'
+    resp.headers['Referrer-Policy']           = 'strict-origin-when-cross-origin'
+    resp.headers['Permissions-Policy']        = 'camera=(), microphone=(), geolocation=()'
+    resp.headers['X-XSS-Protection']          = '1; mode=block'
+    # Build a tight Content-Security-Policy
+    media_src = SUPABASE_URL if SUPABASE_URL else ''
+    resp.headers['Content-Security-Policy'] = (
+        "default-src 'self'; "
+        "script-src 'self' 'unsafe-inline'; "
+        "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; "
+        "font-src 'self' https://fonts.gstatic.com; "
+        "img-src 'self' data: https://images.unsplash.com; "
+        f"media-src 'self' blob: {media_src}; "
+        f"connect-src 'self' {media_src}; "
+        "frame-ancestors 'none';"
+    )
+    return resp
 
 # ── Auth helpers ──────────────────────────────────────────
+def _get_csrf_token() -> str:
+    """Return (and lazily create) a per-session CSRF token."""
+    if 'csrf_token' not in session:
+        session['csrf_token'] = secrets.token_hex(32)
+    return session['csrf_token']
+
 def require_auth(f):
     """Decorator: return 401 JSON if the user is not logged in."""
     @wraps(f)
@@ -178,19 +217,58 @@ generate_icons()
 
 @app.route('/api/login', methods=['POST'])
 def login():
-    """Server-side credential check — credentials live in env vars, never in client JS."""
+    """Server-side credential check with CSRF validation and IP brute-force protection."""
+    ip  = request.headers.get('X-Forwarded-For', request.remote_addr or 'unknown').split(',')[0].strip()
+    now = time.time()
+    rec = _LOGIN_ATTEMPTS[ip]
+
+    # ── Lockout check ──
+    if rec['locked_until'] > now:
+        remaining = int(rec['locked_until'] - now)
+        return jsonify({'ok': False, 'error': f'Too many attempts. Try again in {remaining}s.',
+                        'locked': True, 'remaining': remaining}), 429
+
+    # Reset counter if outside the rolling window
+    if now - rec['window_start'] > _ATTEMPT_WINDOW:
+        rec['count'] = 0
+        rec['window_start'] = now
+
+    # ── CSRF check ──
+    submitted_token = request.headers.get('X-CSRF-Token', '')
+    expected_token  = session.get('csrf_token', '')
+    if not expected_token or not submitted_token or \
+            not hmac.compare_digest(submitted_token, expected_token):
+        return jsonify({'ok': False, 'error': 'Invalid request.'}), 403
+
+    # ── Credential check ──
     expected_user = os.environ.get('LOGIN_USER', '')
     expected_pass = os.environ.get('LOGIN_PASS', '')
     if not expected_user or not expected_pass:
-        # Env vars not set — reject all logins rather than letting a blank password through
         return jsonify({'ok': False, 'error': 'Server not configured'}), 503
-    data = request.get_json(silent=True) or {}
-    user_ok = hmac.compare_digest(data.get('user', ''), expected_user)
-    pass_ok = hmac.compare_digest(data.get('pass', ''), expected_pass)
+
+    data     = request.get_json(silent=True) or {}
+    user_ok  = hmac.compare_digest(data.get('user', ''), expected_user)
+    pass_ok  = hmac.compare_digest(data.get('pass', ''), expected_pass)
+
     if user_ok and pass_ok:
-        session['authed'] = True
+        # Clear brute-force record and regenerate session to prevent fixation
+        _LOGIN_ATTEMPTS.pop(ip, None)
+        session.clear()
+        session['authed']     = True
+        session['csrf_token'] = secrets.token_hex(32)  # rotate CSRF token post-login
+        session.permanent     = True
         return jsonify({'ok': True})
-    return jsonify({'ok': False}), 401
+
+    # ── Failed attempt ──
+    rec['count'] += 1
+    if rec['count'] >= _MAX_ATTEMPTS:
+        rec['locked_until'] = now + _LOCKOUT_SECONDS
+        rec['count']        = 0
+        return jsonify({'ok': False, 'error': f'Too many failed attempts. Locked for {_LOCKOUT_SECONDS}s.',
+                        'locked': True, 'remaining': _LOCKOUT_SECONDS}), 429
+
+    attempts_left = _MAX_ATTEMPTS - rec['count']
+    return jsonify({'ok': False, 'error': 'Wrong credentials.', 'attemptsLeft': attempts_left}), 401
 
 
 @app.route('/api/debug')
@@ -231,7 +309,7 @@ def apple_touch_icon():
 
 @app.route('/')
 def index():
-    return render_template('index.html')
+    return render_template('index.html', csrf_token=_get_csrf_token())
 
 # Serve service worker at root scope
 @app.route('/sw.js')
