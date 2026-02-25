@@ -2649,6 +2649,7 @@ body {
   display: flex;
   gap: 14px;
   padding: 4px 20px 12px;
+  scroll-padding-left: 20px; /* keeps snapped cards inside the left padding */
   overflow-x: auto;
   overflow-y: hidden;
   scrollbar-width: none;
@@ -3138,7 +3139,7 @@ body {
   .home-hero-title { font-size: 62px; }
   .home-hero-vinyl-wrap { display: flex !important; } /* restore vinyl on desktop */
   .category-grid { grid-template-columns: repeat(4, 1fr); padding: 4px 28px 12px; }
-  .artist-shelf { padding: 4px 28px 12px; }
+  .artist-shelf { padding: 4px 28px 12px; scroll-padding-left: 28px; }
   .home-section-hdr { padding: 12px 28px 10px; }
   .home-preview-list { padding: 0 24px 8px; }
   .articles-grid { display: grid; grid-template-columns: repeat(3,1fr); gap: 12px; }
@@ -3645,8 +3646,9 @@ body, #screen-player, #screen-login, #screen-loader {
 
 /* 21. Artist shelf: snap on mobile */
 .artist-shelf {
-  scroll-snap-type: x mandatory;
-  -webkit-scroll-snap-type: x mandatory;
+  scroll-snap-type: x proximity; /* proximity = less aggressive than mandatory, feels more natural */
+  -webkit-scroll-snap-type: x proximity;
+  scroll-padding-left: 20px; /* must match padding-left so snapped cards are fully inside the padded area */
 }
 .artist-card {
   scroll-snap-align: start;

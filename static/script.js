@@ -1386,7 +1386,7 @@ function renderHomeTab() {
     const el = $(id);
     if (!el) return;
     const n = allSongs.filter(s => s.artist === artist).length;
-    el.textContent = n ? `${n} tracks` : '0 tracks';
+    el.textContent = n ? `${n} tracks` : '—';
   });
 
   // ── Category card counts ──
