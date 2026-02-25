@@ -13,10 +13,92 @@ let isPlaying     = false;
 let shuffle       = false;
 let repeat        = false;
 let fpoOpen       = false;
-let isSeeking     = false;
-let playHistory   = []; // stack of previously-played indices for proper prev navigation
+let isSeeking        = false;
+let isVolumeSeeking  = false;
+let playHistory      = []; // stack of previously-played indices for proper prev navigation
+let activeTab        = 'home'; // tracks current tab for slide direction
 
-// ── Likes (localStorage) ──────────────────────
+// ══════════════════════════════════════════
+//  SKELETON LOADING (replaces spinner)
+// ══════════════════════════════════════════
+function showSkeletons(container, count = 8) {
+  const wrap = document.createElement('div');
+  wrap.className = 'skeleton-list';
+  for (let i = 0; i < count; i++) {
+    wrap.innerHTML += `
+      <div class="skeleton-card" style="animation-delay:${i*0.06}s">
+        <div class="sk-num"></div>
+        <div class="sk-art"></div>
+        <div class="sk-info">
+          <div class="sk-name" style="width:${45+Math.random()*30}%"></div>
+          <div class="sk-sub"  style="width:${25+Math.random()*20}%"></div>
+        </div>
+        <div class="sk-btn"></div>
+      </div>`;
+  }
+  container.innerHTML = '';
+  container.appendChild(wrap);
+}
+
+// ══════════════════════════════════════════
+//  ANIMATED COUNTER (count-up)
+// ══════════════════════════════════════════
+function countUp(el, target, duration = 700) {
+  if (!el) return;
+  const start = parseInt(el.textContent, 10) || 0;
+  if (start === target) return;
+  const startTime = performance.now();
+  const step = (now) => {
+    const elapsed = now - startTime;
+    const progress = Math.min(elapsed / duration, 1);
+    // ease-out cubic
+    const eased = 1 - Math.pow(1 - progress, 3);
+    const value = Math.round(start + (target - start) * eased);
+    el.textContent = value;
+    if (progress < 1) requestAnimationFrame(step);
+    else {
+      el.textContent = target;
+      el.classList.add('pop');
+      setTimeout(() => el.classList.remove('pop'), 500);
+    }
+  };
+  requestAnimationFrame(step);
+}
+
+// ══════════════════════════════════════════
+//  ARTIST PHOTO LOADER
+// ══════════════════════════════════════════
+const ARTIST_PHOTOS = {
+  'JuiceWrld':      '/static/img/artist-juicewrld.jpg',
+  'Destroy Lonely': '/static/img/artist-destroy-lonely.jpg',
+  'Ken Carson':     '/static/img/artist-ken-carson.jpg',
+  'EsdeeKid':       '/static/img/artist-esdee-kid.jpg',
+  'D4vd':           '/static/img/artist-d4vd.jpg',
+};
+
+function loadArtistPhotos() {
+  document.querySelectorAll('.artist-card[data-artist]').forEach(card => {
+    const artist = card.dataset.artist;
+    const src    = ARTIST_PHOTOS[artist];
+    if (!src) return;
+    const avatar = card.querySelector('.artist-card-avatar');
+    if (!avatar) return;
+    // Skip if already loaded
+    if (avatar.querySelector('.artist-photo')) return;
+    const img = document.createElement('img');
+    img.className = 'artist-photo';
+    img.alt = artist;
+    img.onload = () => {
+      img.classList.add('loaded');
+      avatar.classList.add('has-photo');
+    };
+    img.onerror = () => img.remove(); // keep initials on error
+    img.src = src;
+    avatar.insertBefore(img, avatar.firstChild);
+  });
+}
+
+// ── Likes (localStorage) ──────────────────
 let likes = new Set(JSON.parse(localStorage.getItem('leakify_likes') || '[]'));
 function saveLikes() { localStorage.setItem('leakify_likes', JSON.stringify([...likes])); }
 
@@ -52,10 +134,19 @@ function showUpdateToast(msg, isError) {
   if (isError) el._timer = setTimeout(() => el.classList.add('hidden'), 3000);
 }
 
-// ── Volume slider gradient helper (module scope — used at boot + in events) ──
+// ── Volume slider gradient helper (npb-volume range input) ──
 function syncVolumeSliderBg(slider) {
   const pct = slider ? slider.value : 80;
   if (slider) slider.style.background = `linear-gradient(to right, var(--purple) ${pct}%, rgba(255,255,255,0.15) ${pct}%)`;
+}
+
+// ── Sync custom FPO volume bar fill + thumb to current audio.volume ──
+function updateVolumeFill() {
+  const pct = (audio ? audio.volume : 0.8) * 100;
+  const fvf = document.getElementById('fpo-vol-fill');
+  const fvt = document.getElementById('fpo-vol-thumb');
+  if (fvf) fvf.style.width = pct + '%';
+  if (fvt) fvt.style.left  = pct + '%';
 }
 
 // ── DOM helpers ───────────────────────────────
@@ -122,7 +213,9 @@ const fpoPrevBtn     = $('fpo-prev-btn');
 const fpoNextBtn     = $('fpo-next-btn');
 const fpoShuffleBtn  = $('fpo-shuffle-btn');
 const fpoRepeatBtn   = $('fpo-repeat-btn');
-const volumeSlider   = $('volume-slider'); // inside FPO
+const fpoVolBar    = $('fpo-vol-bar');   // custom volume bar in FPO
+const fpoVolFill   = $('fpo-vol-fill');
+const fpoVolThumb  = $('fpo-vol-thumb');
 const npbShuffleBtn  = $('npb-shuffle-btn');
 const npbRepeatBtn   = $('npb-repeat-btn');
 const npbVolume      = $('npb-volume');
@@ -239,11 +332,10 @@ if ('serviceWorker' in navigator) {
 // ══════════════════════════════════════════
 window.addEventListener('DOMContentLoaded', () => {
   setupAllEvents();
-  const initVol = (volumeSlider.value || 80) / 100;
-  audio.volume = initVol;
-  npbVolume.value = volumeSlider.value || 80;
+  audio.volume = 0.8;
+  npbVolume.value = 80;
   syncVolumeSliderBg(npbVolume);
-  syncVolumeSliderBg(volumeSlider);
+  updateVolumeFill();
   // Boot: animate CSS 999 loader → show login
   startLoaderScreen();
 });
@@ -337,6 +429,8 @@ function showPlayer() {
 //  LIBRARY
 // ══════════════════════════════════════════
 async function loadLibrary() {
+  // Show skeleton while loading
+  showSkeletons(songList);
   try {
     const res  = await fetch('/api/songs');
     // If session expired server-side, bounce back to login
@@ -351,9 +445,11 @@ async function loadLibrary() {
     applyFilter();
     // Update 999 tab stat counter
     const vibeNum = $('vibe-track-num');
-    if (vibeNum) vibeNum.textContent = allSongs.length || '—';
+    if (vibeNum) countUp(vibeNum, allSongs.length);
     // Populate Home tab
     renderHomeTab();
+    // Load artist photos after DOM settles
+    requestAnimationFrame(() => loadArtistPhotos());
   } catch (err) {
     console.error('Library load error:', err);
     songList.innerHTML = `<div class="no-songs"><strong>Could not load library</strong>Make sure Flask is running and music files are placed in<br><em>Leakify-music-src/</em></div>`;
@@ -747,6 +843,16 @@ function seekAt(e) {
   }
 }
 
+function volumeAt(e) {
+  const rect = fpoVolBar.getBoundingClientRect();
+  const clientX = (e.touches ? e.touches[0].clientX : e.clientX);
+  const pct = Math.max(0, Math.min(1, (clientX - rect.left) / rect.width));
+  audio.volume = pct;
+  updateVolumeFill();
+  npbVolume.value = Math.round(pct * 100);
+  syncVolumeSliderBg(npbVolume);
+}
+
 // ══════════════════════════════════════════
 //  FULL PLAYER OVERLAY
 // ══════════════════════════════════════════
@@ -784,6 +890,8 @@ function closeFPO() {
   let startY = 0, startX = 0, dragging = false, startTime = 0;
 
   fpo.addEventListener('touchstart', e => {
+    // Don't initiate drag when touching any input (range sliders, etc.)
+    if (e.target.tagName === 'INPUT') return;
     // Only initiate from the handle area or top 80px of overlay (not content scroll)
     const touch = e.touches[0];
     startY = touch.clientY;
@@ -795,6 +903,8 @@ function closeFPO() {
 
   fpo.addEventListener('touchmove', e => {
     if (!dragging || !fpoOpen) return;
+    // Don't interfere with input elements (range sliders)
+    if (e.target.tagName === 'INPUT') return;
     const touch = e.touches[0];
     const dy = touch.clientY - startY;
     const dx = touch.clientX - startX;
@@ -861,18 +971,29 @@ function setupAllEvents() {
   nowPlayingBar.querySelector('.npb-row-main').addEventListener('click', openFPO);
   fpoClose.addEventListener('click', closeFPO);
 
-  // Volume — both sliders (FPO + mini bar) stay in sync
-  volumeSlider.addEventListener('input', () => {
-    audio.volume = volumeSlider.value / 100;
-    npbVolume.value = volumeSlider.value;
-    syncVolumeSliderBg(volumeSlider);
-    syncVolumeSliderBg(npbVolume);
+  // Volume — custom FPO bar (drag) + mini bar (range) stay in sync
+  fpoVolBar.addEventListener('mousedown', (e) => {
+    isVolumeSeeking = true;
+    fpoVolBar.classList.add('seeking');
+    volumeAt(e);
+  });
+  fpoVolBar.addEventListener('touchstart', (e) => {
+    isVolumeSeeking = true;
+    fpoVolBar.classList.add('seeking');
+    volumeAt(e);
+  }, { passive: true });
+  window.addEventListener('mousemove', (e) => { if (isVolumeSeeking) volumeAt(e); });
+  window.addEventListener('touchmove', (e) => { if (isVolumeSeeking) volumeAt(e); }, { passive: true });
+  window.addEventListener('mouseup', () => {
+    if (isVolumeSeeking) { isVolumeSeeking = false; fpoVolBar.classList.remove('seeking'); }
+  });
+  window.addEventListener('touchend', () => {
+    if (isVolumeSeeking) { isVolumeSeeking = false; fpoVolBar.classList.remove('seeking'); }
   });
   npbVolume.addEventListener('input', () => {
     audio.volume = npbVolume.value / 100;
-    volumeSlider.value = npbVolume.value;
+    updateVolumeFill();
     syncVolumeSliderBg(npbVolume);
-    syncVolumeSliderBg(volumeSlider);
   });
 
   // Audio events
@@ -986,8 +1107,8 @@ function setupAllEvents() {
     // M = mute/unmute
     if (e.code === 'KeyM') {
       audio.muted = !audio.muted;
-      if (volumeSlider) volumeSlider.style.opacity = audio.muted ? '0.4' : '1';
-      if (npbVolume)    npbVolume.style.opacity    = audio.muted ? '0.4' : '1';
+      if (fpoVolBar) fpoVolBar.style.opacity  = audio.muted ? '0.4' : '1';
+      if (npbVolume) npbVolume.style.opacity  = audio.muted ? '0.4' : '1';
     }
   });
 
@@ -1032,13 +1153,15 @@ function setupAllEvents() {
       e.preventDefault();
       const v = Math.min(100, Math.round(audio.volume * 100) + 5);
       audio.volume = v / 100;
-      [volumeSlider, npbVolume].forEach(s => { if (s) { s.value = v; syncVolumeSliderBg(s); } });
+      updateVolumeFill();
+      if (npbVolume) { npbVolume.value = v; syncVolumeSliderBg(npbVolume); }
     }
     if (e.code === 'ArrowDown') {
       e.preventDefault();
       const v = Math.max(0, Math.round(audio.volume * 100) - 5);
       audio.volume = v / 100;
-      [volumeSlider, npbVolume].forEach(s => { if (s) { s.value = v; syncVolumeSliderBg(s); } });
+      updateVolumeFill();
+      if (npbVolume) { npbVolume.value = v; syncVolumeSliderBg(npbVolume); }
     }
   });
 }
@@ -1079,30 +1202,54 @@ function setupBottomNav() {
     if (pc) pc.scrollTo({ top: 0, behavior: 'smooth' });
   }
 
+  const TAB_ORDER = ['home', 'vault', '999', 'player'];
+
+  function animateTabTransition(toTab, fromTab) {
+    const allTabs = [tabHome, tabVault, tab999];
+    const tabMap  = { home: tabHome, vault: tabVault, '999': tab999 };
+    const incoming = tabMap[toTab];
+    if (!incoming || !fromTab || fromTab === toTab) return;
+    const fromIdx = TAB_ORDER.indexOf(fromTab);
+    const toIdx   = TAB_ORDER.indexOf(toTab);
+    const goingRight = toIdx > fromIdx;
+    incoming.classList.remove('slide-in-left', 'slide-in-right');
+    incoming.classList.add(goingRight ? 'slide-in-right' : 'slide-in-left');
+    // Remove animation class after it's done
+    incoming.addEventListener('animationend', () => {
+      incoming.classList.remove('slide-in-left', 'slide-in-right');
+    }, { once: true });
+  }
+
   function setTab(tab) {
+    const fromTab = activeTab;
+    activeTab = tab;
     hideAllTabs();
     if (tab === 'home') {
       bnavHome  && bnavHome.classList.add('active');
       tabHome   && tabHome.classList.remove('hidden');
+      animateTabTransition('home', fromTab);
       moveBnavPill(bnavHome);
       scrollTop();
     } else if (tab === 'vault') {
       bnavVault && bnavVault.classList.add('active');
       tabVault  && tabVault.classList.remove('hidden');
+      animateTabTransition('vault', fromTab);
       moveBnavPill(bnavVault);
       scrollTop();
     } else if (tab === '999') {
       bnav999   && bnav999.classList.add('active');
       tab999    && tab999.classList.remove('hidden');
+      animateTabTransition('999', fromTab);
       moveBnavPill(bnav999);
       // Update stat counter
       const vibeNum = $('vibe-track-num');
-      if (vibeNum && allSongs.length > 0) vibeNum.textContent = allSongs.length;
+      if (vibeNum && allSongs.length > 0) countUp(vibeNum, allSongs.length);
       scrollTop();
     } else if (tab === 'player') {
       // Opens FPO if a song is active, else fall back to vault
       bnavVault && bnavVault.classList.add('active');
       tabVault  && tabVault.classList.remove('hidden');
+      animateTabTransition('vault', fromTab);
       moveBnavPill(bnavVault);
       if (isPlaying || (audio.src && audio.src !== window.location.href)) {
         openFPO();
@@ -1130,15 +1277,15 @@ function setupBottomNav() {
 //  HOME TAB RENDERING
 // ══════════════════════════════════════════
 function renderHomeTab() {
-  // ── Stat: total tracks ──
+  // ── Stat: total tracks (animated count-up) ──
   const statTracks = $('home-stat-tracks');
-  if (statTracks) statTracks.textContent = allSongs.length || '0';
+  if (statTracks) countUp(statTracks, allSongs.length || 0);
 
-  // ── Stat: unique artists ──
+  // ── Stat: unique artists (animated) ──
   const statArtists = $('home-stat-artists');
   if (statArtists) {
     const uniqueArtists = new Set(allSongs.map(s => s.artist)).size;
-    statArtists.textContent = uniqueArtists || '0';
+    countUp(statArtists, uniqueArtists || 0);
   }
 
   // ── Artist card counts ──
@@ -1375,11 +1522,18 @@ function switchToVaultAndFilter(artist, tag) {
   const tab999    = $('tab-999');
   const bnavHome  = $('bnav-home');
 
-  // Switch UI to vault
+  // Switch UI to vault with slide animation from the left (home→vault)
+  const fromTab = activeTab;
+  activeTab = 'vault';
   [bnavHome, bnavVault, bnav999].forEach(b => b && b.classList.remove('active'));
   [tabHome, tab999].forEach(t => t && t.classList.add('hidden'));
   bnavVault && bnavVault.classList.add('active');
   tabVault  && tabVault.classList.remove('hidden');
+  if (tabVault && fromTab !== 'vault') {
+    tabVault.classList.remove('slide-in-left', 'slide-in-right');
+    tabVault.classList.add('slide-in-right');
+    tabVault.addEventListener('animationend', () => tabVault.classList.remove('slide-in-right'), { once: true });
+  }
 
   if (artist && artist !== 'all') {
     // Clear any active search when switching to an artist filter
@@ -1649,7 +1803,7 @@ function setupSleepTimer() {
               nowPlayingBar.classList.remove('playing');
               setVinylSpin(false);
               // Restore volume for next play
-              setTimeout(() => { audio.volume = volumeSlider ? volumeSlider.value / 100 : 0.8; }, 400);
+              setTimeout(() => { audio.volume = npbVolume ? npbVolume.value / 100 : 0.8; updateVolumeFill(); }, 400);
             }
           }, 100);
           return;

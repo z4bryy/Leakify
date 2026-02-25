@@ -39,10 +39,16 @@
   --ease:         cubic-bezier(0.25, 0.46, 0.45, 0.94);
   --ease-spring:  cubic-bezier(0.175, 0.885, 0.32, 1.275);
   --ease-bounce:  cubic-bezier(0.34, 1.56, 0.64, 1);
-  --npb-h:        76px;
+  --npb-h:        108px;
+  --bnav-h:       70px;  /* bottom nav height (excl. safe area) */
   --header-h:     60px;
   --pills-h:      52px;
   --sb-h:         52px;
+  /* 2026 design tokens */
+  --glow-purple:  0 0 40px rgba(191,90,242,0.45), 0 0 80px rgba(191,90,242,0.18);
+  --glow-pink:    0 0 40px rgba(255,55,95,0.40),  0 0 80px rgba(255,55,95,0.12);
+  --glass-bg:     rgba(12, 2, 22, 0.75);
+  --glass-border: rgba(255,255,255,0.09);
 }
 
 html { height: 100%; overflow: hidden; }
@@ -94,6 +100,11 @@ body {
   justify-content: center;
   background: radial-gradient(ellipse at 50% 30%, #2a0056 0%, #0d0020 45%, #000 100%);
   overflow: hidden;
+  /* Safe area padding so the card stays clear of Dynamic Island */
+  padding-top: max(env(safe-area-inset-top), 44px);
+  padding-bottom: max(env(safe-area-inset-bottom), 24px);
+  padding-left: max(env(safe-area-inset-left), 0px);
+  padding-right: max(env(safe-area-inset-right), 0px);
 }
 
 /* Login inputs — allow text selection + prevent zoom */
@@ -126,18 +137,20 @@ body {
   background: rgba(16, 2, 28, 0.80);
   border: 1px solid var(--border);
   border-radius: var(--radius-xl);
-  padding: 44px 36px 40px;
-  width: min(88vw, 380px);
+  padding: 40px 32px 36px;
+  width: min(92vw, 380px);
   backdrop-filter: blur(44px) saturate(200%);
   -webkit-backdrop-filter: blur(44px) saturate(200%);
   box-shadow:
-    0 32px 80px rgba(0,0,0,0.78),
-    0 0 0 0.5px rgba(191,90,242,0.32),
-    0 0 70px rgba(191,90,242,0.14),
-    inset 0 1px 0 rgba(255,255,255,0.07);
+    0 40px 100px rgba(0,0,0,0.82),
+    0 0 0 0.5px rgba(191,90,242,0.38),
+    0 0 80px rgba(191,90,242,0.16),
+    0 0 160px rgba(138,43,226,0.08),
+    inset 0 1px 0 rgba(255,255,255,0.12),
+    inset 0 -1px 0 rgba(0,0,0,0.2);
   animation: cardEntrance 1s var(--ease-bounce) both;
-  /* Push down from status bar on iOS PWA */
-  margin-top: max(env(safe-area-inset-top), 0px);
+  /* Centering managed by parent flex — no margin-top override */
+  margin-top: 0;
   overflow: hidden;
 }
 .login-card::after {
@@ -316,7 +329,7 @@ body {
   padding: 16px;
   background: linear-gradient(135deg, var(--purple), var(--pink));
   border: none;
-  border-radius: var(--radius-md);
+  border-radius: var(--radius-lg);
   color: #fff;
   font-family: inherit;
   font-size: 13px;
@@ -328,7 +341,10 @@ body {
   justify-content: center;
   gap: 10px;
   transition: transform 0.2s var(--ease-spring), box-shadow 0.3s;
-  box-shadow: 0 8px 30px rgba(191,90,242,0.3);
+  box-shadow:
+    0 10px 36px rgba(191,90,242,0.38),
+    0 0 0 1px rgba(255,255,255,0.08),
+    inset 0 1px 0 rgba(255,255,255,0.20);
   position: relative;
   overflow: hidden;
 }
@@ -442,12 +458,28 @@ body {
   align-items: center;
   justify-content: space-between;
   padding: max(env(safe-area-inset-top), 12px) 20px 12px;
-  background: rgba(6,0,8,0.6);
-  backdrop-filter: blur(24px);
-  -webkit-backdrop-filter: blur(24px);
-  border-bottom: 1px solid var(--border);
+  background: rgba(5, 0, 9, 0.72);
+  backdrop-filter: blur(36px) saturate(220%);
+  -webkit-backdrop-filter: blur(36px) saturate(220%);
+  border-bottom: none;
+  box-shadow: inset 0 -1px 0 rgba(191,90,242,0.0);
   height: calc(var(--header-h) + max(env(safe-area-inset-top), 0px));
   flex-shrink: 0;
+}
+
+/* Gradient hairline border at base of header */
+.player-header::after {
+  content: '';
+  position: absolute;
+  bottom: 0; left: 0; right: 0;
+  height: 1px;
+  background: linear-gradient(90deg,
+    transparent 0%,
+    rgba(191, 90, 242, 0.50) 20%,
+    rgba(255, 55, 95,  0.38) 50%,
+    rgba(191, 90, 242, 0.50) 80%,
+    transparent 100%);
+  pointer-events: none;
 }
 
 .header-left { display: flex; align-items: center; gap: 10px; }
@@ -558,12 +590,15 @@ body {
 
 /* ── PILLS ── */
 .pills-wrap {
-  position: relative;
+  position: sticky;
+  top: 0;
   z-index: 18;
   flex-shrink: 0;
   overflow: hidden;
   height: var(--pills-h);
-  background: rgba(6,0,8,0.5);
+  background: rgba(6,0,8,0.85);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
   border-bottom: 1px solid var(--border);
 }
 .pills-inner {
@@ -601,8 +636,12 @@ body {
   border-color: transparent;
   color: #fff;
   font-weight: 700;
-  box-shadow: 0 4px 22px rgba(191,90,242,0.48), 0 0 0 1px rgba(191,90,242,0.22);
-  text-shadow: 0 1px 8px rgba(0,0,0,0.3);
+  box-shadow:
+    0 4px 22px rgba(191,90,242,0.48),
+    0 0 0 1px rgba(191,90,242,0.28),
+    inset 0 1px 0 rgba(255,255,255,0.18),
+    inset 0 -1px 0 rgba(0,0,0,0.12);
+  text-shadow: 0 1px 6px rgba(0,0,0,0.28);
 }
 
 /* ── PLAYER CONTENT ── */
@@ -612,7 +651,8 @@ body {
   flex: 1;
   overflow-y: auto;
   overflow-x: hidden;
-  padding-bottom: calc(120px + max(env(safe-area-inset-bottom), 16px));
+  /* Account for: bottom nav + mini player (NPB) + safe area + breathing room */
+  padding-bottom: calc(var(--bnav-h) + var(--npb-h) + max(env(safe-area-inset-bottom), 0px) + 28px);
   scrollbar-width: thin;
   scrollbar-color: rgba(191,90,242,0.3) transparent;
   -webkit-overflow-scrolling: touch;
@@ -798,16 +838,17 @@ body {
   align-items: center;
   gap: 14px;
   padding: 12px 14px;
-  background: var(--surface);
+  background: rgba(20, 4, 38, 0.78);
   border-radius: var(--radius-md);
-  border: 1px solid rgba(255,255,255,0.06);
+  border: 1px solid rgba(255,255,255,0.07);
   cursor: pointer;
   transition: background 0.22s var(--ease), border-color 0.22s, transform 0.15s var(--ease-bounce), box-shadow 0.28s;
   animation: trackEntrance 0.5s var(--ease-bounce) both;
-  backdrop-filter: blur(14px);
-  -webkit-backdrop-filter: blur(14px);
+  backdrop-filter: blur(18px) saturate(180%);
+  -webkit-backdrop-filter: blur(18px) saturate(180%);
   position: relative;
   overflow: hidden;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.05), 0 2px 8px rgba(0,0,0,0.25);
 }
 .track-card::after {
   content: '';
@@ -842,9 +883,14 @@ body {
 .track-card:active { transform: scale(0.98); }
 .track-card:hover { background: var(--surface-2); border-color: rgba(191,90,242,0.2); }
 .track-card.active {
-  background: rgba(191, 90, 242, 0.14);
-  border-color: rgba(191, 90, 242, 0.50);
-  box-shadow: 0 0 26px rgba(191,90,242,0.18), inset 0 0 26px rgba(191,90,242,0.07);
+  background: rgba(138, 43, 226, 0.16);
+  border-color: rgba(191, 90, 242, 0.55);
+  box-shadow:
+    0 0 0 1px rgba(191,90,242,0.25),
+    0 0 28px rgba(138,43,226,0.22),
+    0 0 60px rgba(191,90,242,0.10),
+    inset 0 1px 0 rgba(217,126,255,0.12),
+    inset 0 0 28px rgba(138,43,226,0.08);
 }
 .track-card.active::before { opacity: 1; }
 
@@ -958,20 +1004,25 @@ body {
 /* ── NOW PLAYING BAR (mini player) ── */
 .now-playing-bar {
   position: fixed;
-  bottom: max(env(safe-area-inset-bottom), 10px);
+  /* Sit directly above the bottom navigation bar + safe area */
+  bottom: calc(var(--bnav-h) + max(env(safe-area-inset-bottom), 0px) + 8px);
   left: 12px;
   right: 12px;
   z-index: 50;
-  background: rgba(22, 4, 38, 0.88);
-  border: 1px solid rgba(191,90,242,0.32);
-  border-radius: 20px;
-  backdrop-filter: blur(32px) saturate(220%);
-  -webkit-backdrop-filter: blur(32px) saturate(220%);
+  background: rgba(14, 2, 26, 0.92);
+  border: 1px solid rgba(191,90,242,0.30);
+  border-radius: 22px;
+  backdrop-filter: blur(44px) saturate(260%);
+  -webkit-backdrop-filter: blur(44px) saturate(260%);
   padding: 8px 8px 6px;
   display: flex;
   flex-direction: column;
   gap: 6px;
-  box-shadow: 0 8px 40px rgba(0,0,0,0.62), 0 0 0 0.5px rgba(191,90,242,0.22);
+  box-shadow:
+    0 10px 48px rgba(0,0,0,0.70),
+    0 0 0 0.5px rgba(191,90,242,0.20),
+    inset 0 1px 0 rgba(255,255,255,0.07),
+    inset 0 -1px 0 rgba(0,0,0,0.15);
   transform: translateY(120%);
   opacity: 0;
   transition: transform 0.5s var(--ease-spring), opacity 0.4s var(--ease);
@@ -1073,11 +1124,14 @@ body {
 .npb-btn svg { width: 19px; height: 19px; }
 .npb-btn:active { background: rgba(191,90,242,0.2); color: var(--purple); transform: scale(0.88); }
 .npb-play {
-  width: 40px; height: 40px;
+  width: 42px; height: 42px;
   background: linear-gradient(135deg, var(--purple), var(--pink));
   color: #fff;
   border-radius: 50%;
-  box-shadow: 0 4px 18px rgba(191,90,242,0.48);
+  box-shadow:
+    0 5px 22px rgba(191,90,242,0.55),
+    0 0 0 1px rgba(255,255,255,0.10),
+    inset 0 1px 0 rgba(255,255,255,0.20);
   position: relative;
   overflow: visible;
 }
@@ -1215,12 +1269,14 @@ body {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 20px;
+  gap: 16px;
   overflow-y: auto;
-  padding-bottom: max(env(safe-area-inset-bottom), 28px);
+  padding-bottom: max(calc(env(safe-area-inset-bottom) + 32px), 44px);
   -webkit-overflow-scrolling: touch;
   overscroll-behavior-y: none;
+  scrollbar-width: none;
 }
+.fpo-content::-webkit-scrollbar { display: none; }
 
 /* FPO Art */
 .fpo-art-wrap {
@@ -1231,14 +1287,17 @@ body {
   width: min(72vw, 300px);
   height: min(72vw, 300px);
   border-radius: 28px;
-  background: rgba(30,5,50,0.8);
-  border: 1.5px solid rgba(191,90,242,0.35);
+  background: linear-gradient(145deg, rgba(38,8,68,0.92), rgba(14,2,28,0.98));
+  border: 1.5px solid rgba(191,90,242,0.40);
   display: flex;
   align-items: center;
   justify-content: center;
   position: relative;
   overflow: hidden;
-  box-shadow: 0 24px 80px rgba(0,0,0,0.7);
+  box-shadow:
+    0 32px 100px rgba(0,0,0,0.78),
+    0 0 0 1px rgba(255,255,255,0.05),
+    inset 0 1px 0 rgba(255,255,255,0.09);
   transition: transform 0.4s var(--ease);
 }
 .fpo-art.playing { animation: artBounce 8s ease-in-out infinite; }
@@ -1312,6 +1371,7 @@ body {
   margin-bottom: 8px;
   display: flex;
   align-items: center;
+  touch-action: none; /* seeking handled by JS — don't let browser interpret as pan */
 }
 /* Visual track line via pseudo-element */
 .fpo-progress-bar::before {
@@ -1333,7 +1393,7 @@ body {
   border-radius: 99px;
   transition: width 0.25s linear;
   pointer-events: none;
-  box-shadow: 0 0 8px rgba(191,90,242,0.55);
+  box-shadow: 0 0 14px rgba(191,90,242,0.72), 0 0 4px rgba(255,55,95,0.40);
 }
 .fpo-progress-thumb {
   position: absolute;
@@ -1394,10 +1454,13 @@ body {
 .fpo-ctrl-btn.active { color: var(--purple); }
 
 .fpo-play-big {
-  width: 70px; height: 70px;
+  width: 72px; height: 72px;
   background: linear-gradient(135deg, var(--purple), var(--pink));
   border-radius: 50%;
-  box-shadow: 0 8px 38px rgba(191,90,242,0.52);
+  box-shadow:
+    0 10px 42px rgba(191,90,242,0.58),
+    0 0 0 1px rgba(255,255,255,0.12),
+    inset 0 1px 0 rgba(255,255,255,0.22);
   color: #fff;
   flex-shrink: 0;
   padding: 0;
@@ -1430,31 +1493,56 @@ body {
   width: 100%;
 }
 .fpo-vol-icon { width: 18px; height: 18px; color: var(--text-3); flex-shrink: 0; }
-.fpo-slider {
+
+/* Custom Apple Music-style volume bar */
+.fpo-vol-bar {
   flex: 1;
-  -webkit-appearance: none;
-  appearance: none;
+  height: 32px;
+  background: transparent;
+  position: relative;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  touch-action: none;
+}
+.fpo-vol-bar::before {
+  content: '';
+  position: absolute;
+  left: 0; right: 0;
+  top: 50%; transform: translateY(-50%);
   height: 4px;
+  background: rgba(255,255,255,0.12);
   border-radius: 99px;
-  background: rgba(255,255,255,0.15);
-  outline: none;
-  cursor: pointer;
 }
-.fpo-slider::-webkit-slider-thumb {
-  -webkit-appearance: none;
-  width: 18px; height: 18px;
-  border-radius: 50%;
-  background: #fff;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.4);
-  cursor: pointer;
+.fpo-vol-fill {
+  position: absolute;
+  top: 50%; transform: translateY(-50%);
+  left: 0;
+  height: 4px;
+  width: 80%;
+  background: linear-gradient(90deg, var(--purple), var(--pink));
+  border-radius: 99px;
+  transition: width 0.1s linear;
+  pointer-events: none;
+  box-shadow: 0 0 14px rgba(191,90,242,0.72), 0 0 4px rgba(255,55,95,0.40);
 }
-.fpo-slider::-moz-range-thumb {
-  width: 18px; height: 18px;
-  border-radius: 50%;
+.fpo-vol-thumb {
+  position: absolute;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  width: 16px; height: 16px;
   background: #fff;
-  border: none;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.4);
-  cursor: pointer;
+  border-radius: 50%;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.45), 0 0 0 3px rgba(191,90,242,0.25);
+  left: 80%;
+  transition: left 0.1s linear, transform 0.15s var(--ease-spring);
+  pointer-events: none;
+}
+.fpo-vol-bar.seeking .fpo-vol-fill  { transition: none !important; }
+.fpo-vol-bar.seeking .fpo-vol-thumb { transition: none !important; }
+.fpo-vol-bar:hover .fpo-vol-thumb,
+.fpo-vol-bar.seeking .fpo-vol-thumb {
+  transform: translate(-50%, -50%) scale(1.3);
 }
 
 /* Track Card Tag badge */
@@ -1493,7 +1581,7 @@ body {
 ───────────────────────────── */
 /* Desktop */
 @media (min-width: 768px) {
-  .player-content { padding-bottom: 130px; }
+  .player-content { padding-bottom: calc(var(--npb-h) + 40px); }
   .track-grid {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
@@ -1503,12 +1591,12 @@ body {
     left: 50%;
     transform: translateX(-50%) translateY(120%);
     width: min(620px, 92vw);
-    bottom: 20px;
+    bottom: 20px; /* no bottom-nav on desktop */
   }
   .now-playing-bar.visible {
     transform: translateX(-50%) translateY(0);
   }
-  .fpo-content { padding: 0 60px 40px; }
+  .fpo-content { padding: 0 60px; padding-bottom: max(calc(env(safe-area-inset-bottom) + 32px), 44px); }
   .now-playing-hero { padding: 32px 32px 24px; }
   .hero-art { width: 110px; height: 110px; }
   .hero-art-inner svg { width: 60px; height: 60px; }
@@ -1542,9 +1630,9 @@ body {
    OPTIMISATIONS & POLISH  (added Feb 2026)
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
 
-/* ─── Performance: layout containment on every card ─── */
+/* ─── Performance: style containment on every card (not layout — it clips shadows) ─── */
 .track-card {
-  contain: layout style;
+  contain: style;
 }
 
 /* ─── Performance: disable expensive per-card shimmer on mobile ─── */
@@ -1557,14 +1645,14 @@ body {
 
 /* ─── FPO: iOS-style spring entrance (scale + slide) ─── */
 .full-player-overlay {
-  transform: translateY(100%) scale(0.97);
+  transform: translateY(100%);
   transition: transform 0.52s cubic-bezier(0.32, 0.72, 0, 1),
               opacity  0.35s var(--ease);
   opacity: 0;
-  transform-origin: bottom center;
+  transform-origin: center bottom;
 }
 .full-player-overlay.open {
-  transform: translateY(0) scale(1);
+  transform: translateY(0);
   opacity: 1;
 }
 
@@ -1834,8 +1922,8 @@ body {
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
 .login-title {
   font-family: var(--font-display) !important;
-  font-size: 52px !important;
-  letter-spacing: 14px !important;
+  font-size: clamp(38px, 12vw, 52px) !important;
+  letter-spacing: clamp(6px, 3vw, 14px) !important;
   line-height: 1;
   /* inherit gradient + animation from existing rule */
 }
@@ -1848,7 +1936,7 @@ body {
 
 .hero-track-name {
   font-family: var(--font-display) !important;
-  font-size: 26px !important;
+  font-size: clamp(20px, 5.5vw, 26px) !important;
   letter-spacing: 2px !important;
 }
 
@@ -1879,9 +1967,9 @@ body {
   padding-bottom: max(env(safe-area-inset-bottom), 0px);
   z-index: 55;
   /* Layered glass background */
-  background: rgba(8, 2, 14, 0.88);
-  backdrop-filter: blur(40px) saturate(280%) brightness(0.95);
-  -webkit-backdrop-filter: blur(40px) saturate(280%) brightness(0.95);
+  background: rgba(5, 1, 10, 0.93);
+  backdrop-filter: blur(52px) saturate(320%) brightness(0.88);
+  -webkit-backdrop-filter: blur(52px) saturate(320%) brightness(0.88);
   /* Gradient top border — glowing purple line */
   border-top: none;
   display: flex;
@@ -1889,9 +1977,9 @@ body {
   justify-content: space-around;
   padding-top: 3px;
   box-shadow:
-    0 -1px 0 rgba(191, 90, 242, 0.35),
-    0 -8px 40px rgba(0, 0, 0, 0.6),
-    inset 0 1px 0 rgba(255, 255, 255, 0.05);
+    0 -1px 0 rgba(0, 0, 0, 0.6),
+    0 -12px 60px rgba(0, 0, 0, 0.65),
+    inset 0 1px 0 rgba(255, 255, 255, 0.07);
 }
 
 /* Top gradient accent line */
@@ -2283,14 +2371,15 @@ body {
 /* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
    KROK 6 — iOS SAFE AREA FINAL POLISH
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
-/* Dynamic Island / Notch awareness for login card */
+/* Dynamic Island / Notch awareness for login card — use padding on the parent, not margin here */
 .login-card {
-  margin-top: max(env(safe-area-inset-top), 20px) !important;
+  margin-top: 0 !important;
 }
 
-/* Ensure FPO drag handle respects Dynamic Island */
+/* FPO drag handle — safe area already baked into overlay top (inset:0), just add breathing room */
 .fpo-drag-handle {
-  margin-top: max(calc(env(safe-area-inset-top) + 8px), 20px) !important;
+  margin-top: max(calc(env(safe-area-inset-top) + 6px), 16px) !important;
+  margin-bottom: 0 !important;
 }
 
 /* Login subtitle upgrade */
@@ -2389,7 +2478,7 @@ body {
 
 .home-hero-title {
   font-family: var(--font-display);
-  font-size: 46px;
+  font-size: clamp(34px, 11vw, 46px);
   line-height: 1;
   letter-spacing: 2px;
   background: linear-gradient(135deg, #fff 0%, rgba(217,126,255,0.9) 40%, rgba(191,90,242,1) 70%, rgba(255,55,95,0.85) 100%);
@@ -2712,15 +2801,17 @@ body {
   align-items: center;
   gap: 12px;
   padding: 10px 14px;
-  background: var(--surface);
+  background: rgba(20, 4, 36, 0.75);
   border-radius: var(--radius-md);
-  border: 1px solid rgba(255,255,255,0.05);
+  border: 1px solid rgba(255,255,255,0.06);
   cursor: pointer;
   transition: background 0.2s var(--ease), transform 0.15s;
   animation: trackEntrance 0.4s var(--ease-bounce) both;
-  backdrop-filter: blur(10px);
+  backdrop-filter: blur(16px) saturate(180%);
+  -webkit-backdrop-filter: blur(16px) saturate(180%);
   position: relative;
   overflow: hidden;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.05), 0 2px 6px rgba(0,0,0,0.20);
 }
 .home-preview-song:active { transform: scale(0.98); background: var(--surface-2); }
 @media (hover: hover) { .home-preview-song:hover { background: var(--surface-2); border-color: rgba(191,90,242,0.18); } }
@@ -3045,6 +3136,7 @@ body {
 @media (min-width: 768px) {
   .home-hero { padding: 48px 36px 40px; min-height: 280px; }
   .home-hero-title { font-size: 62px; }
+  .home-hero-vinyl-wrap { display: flex !important; } /* restore vinyl on desktop */
   .category-grid { grid-template-columns: repeat(4, 1fr); padding: 4px 28px 12px; }
   .artist-shelf { padding: 4px 28px 12px; }
   .home-section-hdr { padding: 12px 28px 10px; }
@@ -3394,9 +3486,7 @@ body {
 }
 
 /* ── FPO content overflow fix for extra row ── */
-.fpo-content {
-  padding-bottom: 8px !important;
-}
+/* NOTE: padding-bottom is set via env(safe-area-inset-bottom) in the base rule — do NOT override with px here */
 
 /* ── Visualizer idle (no audio): dim ── */
 .fpo-visualizer.idle { opacity: 0.25; }
@@ -3411,4 +3501,1010 @@ body {
 /* ── Track tag: hide on tiny show only current pill + heart ── */
 @media (max-width: 340px) {
   .track-card .track-tag { display: none; }
+}
+
+/* ════════════════════════════════════════════════════════════════
+   iPHONE 14 PRO & MOBILE FINAL POLISH  (Feb 2026)
+   Target: 393×852pt, Dynamic Island, safe-area-inset-top ≈59pt
+════════════════════════════════════════════════════════════════ */
+
+/* 1. Header: ensure adequate height for Dynamic Island notch region */
+.player-header {
+  /* The dynamic island area can be up to 59pt on iPhone 14 Pro — height is computed dynamically */
+  padding-top: max(env(safe-area-inset-top), 14px);
+  padding-bottom: 10px;
+  height: auto;
+  min-height: calc(var(--header-h) + max(env(safe-area-inset-top), 0px));
+}
+
+/* 2. Home hero: hide vinyl on narrow screens to give text space */
+@media (max-width: 420px) {
+  .home-hero {
+    padding: 28px 20px 24px;
+    min-height: 210px;
+  }
+  .home-hero-vinyl-wrap {
+    display: none;
+  }
+}
+
+/* 3. Home hero: even tighter on smaller screens */
+@media (max-width: 375px) {
+  .home-hero-play-btn, .home-hero-shuffle-btn { padding: 10px 16px; font-size: 12px; }
+}
+
+/* 4. Login card: fit the card on very small screens without scrolling */
+@media (max-height: 700px) {
+  .login-logo-ring { width: 62px; height: 62px; margin-bottom: 10px; }
+  .login-logo-icon { width: 28px; height: 28px; }
+  .login-title { font-size: 42px !important; }
+  .login-logo-wrap { margin-bottom: 24px; }
+  .login-btn { margin-top: 14px; padding: 14px; }
+  .login-footer { margin-top: 18px; }
+  .login-card { padding: 32px 28px 28px; }
+}
+
+/* 5. Full player: fpo-art smaller on lower devices */
+@media (max-height: 780px) {
+  .fpo-art {
+    width: min(62vw, 240px);
+    height: min(62vw, 240px);
+  }
+}
+
+/* 6. Mini player: ensure it never clips into landscape safe areas on iPhone */
+@media (max-width: 767px) {
+  .now-playing-bar {
+    left: max(env(safe-area-inset-left) + 10px, 12px) !important;
+    right: max(env(safe-area-inset-right) + 10px, 12px) !important;
+  }
+}
+
+/* 7. Bottom nav: prevent label text from touching the home indicator */
+.bnav-btn {
+  padding-bottom: 8px;
+}
+
+/* 8. Player pills: use full width with proper touch targets */
+.pill {
+  min-height: 36px;
+  padding: 0 16px;
+}
+
+/* 9. Track cards: minimum touch target + improved text legibility on Retina */
+.track-card-name {
+  font-size: 14.5px;
+}
+.track-card-sub {
+  font-size: 12.5px;
+}
+
+/* 10. Bottom nav active pill: precise left calculation for 4 buttons */
+/* JS positions this via left: offset; kept as fallback */
+.bnav-pill {
+  transition: left 0.32s cubic-bezier(0.34, 1.56, 0.64, 1), opacity 0.2s;
+}
+
+/* 11. FPO title marquee: faster on narrow screens */
+@media (max-width: 400px) {
+  #fpo-title.marquee-text { animation-duration: 12s; }
+  .fpo-title { font-size: 26px !important; }
+  .fpo-artist { font-size: 14px; }
+}
+
+/* 12. Category grid: single column on very narrow screens */
+@media (max-width: 320px) {
+  .category-grid { grid-template-columns: 1fr; }
+  .artist-card { width: 76px; }
+  .artist-card-avatar { width: 58px; height: 58px; }
+}
+
+/* 13. Track card action area: bigger touch target */
+.track-card-action {
+  min-width: 36px;
+  min-height: 36px;
+}
+
+/* 14. Search bar: full input area tap zone on iOS */
+.search-bar-inner input {
+  min-height: 40px;
+}
+
+/* 15. FPO controls: extra separation between buttons on narrow */
+@media (max-width: 380px) {
+  .fpo-controls { gap: 0; padding: 0; }
+  .fpo-ctrl-btn { min-width: 40px; min-height: 44px; padding: 6px; }
+  .fpo-play-big { width: 64px; height: 64px; }
+  .fpo-play-big svg { width: 28px; height: 28px; }
+}
+
+/* 16. Sleep timer modal: safe area bottom */
+.stm-inner {
+  padding-bottom: max(calc(env(safe-area-inset-bottom) + 24px), 32px) !important;
+}
+
+/* 17. Queue panel: safe area bottom */
+.queue-panel {
+  padding-bottom: max(env(safe-area-inset-bottom), 0px) !important;
+}
+
+/* 18. FPO: remove old conflicting base transition (the spring one in the upgrade block already handles this) */
+
+/* 19. Fix: vault hero art border-radius on iOS */
+.hero-art {
+  -webkit-mask-image: -webkit-radial-gradient(white, black); /* clips overflow properly on iOS */
+}
+.fpo-art {
+  -webkit-mask-image: -webkit-radial-gradient(white, black);
+}
+
+/* 20. Fix: prevent iOS Safari from rendering white flash on navigation */
+body, #screen-player, #screen-login, #screen-loader {
+  -webkit-backface-visibility: hidden;
+}
+
+/* 21. Artist shelf: snap on mobile */
+.artist-shelf {
+  scroll-snap-type: x mandatory;
+  -webkit-scroll-snap-type: x mandatory;
+}
+.artist-card {
+  scroll-snap-align: start;
+}
+
+/* 22. Home section heading: scale down on tiny screens */
+@media (max-width: 375px) {
+  .home-section-title { font-size: 20px !important; }
+  .home-hero-eyebrow { font-size: 9px; }
+}
+
+/* 23. Input group spacing for compact login on small height */
+@media (max-height: 650px) {
+  .input-group { gap: 10px; margin-bottom: 6px; }
+  .input-wrap input { padding: 12px 16px 12px 44px; }
+}
+
+/* 24. Volume slider: iOS Safari requires touch-action:none so horizontal drag
+        isn't hijacked by the global `touch-action:manipulation` reset */
+.npb-vol-slider,
+.fpo-slider {
+  -webkit-appearance: none;
+  appearance: none;
+  cursor: pointer;
+  touch-action: none;           /* let the range input own all touch events */
+  -webkit-user-select: none;     /* no text selection while scrubbing */
+  user-select: none;
+}
+.npb-vol-slider:focus, .fpo-slider:focus { outline: none; }
+
+/* 25. Track card: overflow clipping for iOS */
+.track-card {
+  overflow: hidden;
+  -webkit-transform: translateZ(0);
+  transform: translateZ(0);
+}
+
+/* 26. Pill inner: iOS momentum scrolling */
+.pills-inner {
+  -webkit-overflow-scrolling: touch;
+  scroll-snap-type: none; /* pills don't snap */
+}
+
+/* 27. No Safari text decoration on links/buttons */
+a, button { -webkit-tap-highlight-color: transparent; }
+
+/* 28. Lyrics card: improve readability on small screens */
+@media (max-width: 380px) {
+  .lyric-cards { grid-template-columns: 1fr; }
+  .lyric-text { font-size: 12px; }
+}
+
+/* 29. Vibe hero: Full width with correct aspect ratio on iPhone */
+@media (max-width: 420px) {
+  .vibe-hero { height: 56vw; min-height: 200px; }
+  .vibe-quote { font-size: 26px; }
+}
+
+/* 30. Bio block: reduce padding on phone */
+@media (max-width: 420px) {
+  .bio-block { margin: 0 8px 16px; padding: 18px 16px; }
+  .bio-text { font-size: 13.5px; }
+}
+
+/* ════════════════════════════════════════════════════════════════
+   GRAPHICAL POLISH — iPhone 14 Pro (393×852 pt) & Full Responsive
+   Feb 2026 · Micro-details, spacing, glass, typography
+════════════════════════════════════════════════════════════════ */
+
+/* ── Home: hero inner layout — full width when no vinyl ── */
+@media (max-width: 420px) {
+  .home-hero {
+    padding: 30px 20px 26px;
+  }
+  .home-hero-inner {
+    width: 100%;
+  }
+  .home-hero-title {
+    font-size: clamp(40px, 13vw, 50px);
+  }
+  .home-hero-stats {
+    gap: 20px;
+    margin-top: 2px;
+  }
+  .home-stat-num {
+    font-size: 28px;
+  }
+  .home-hero-actions {
+    margin-bottom: 18px;
+    gap: 8px;
+  }
+}
+
+/* ── Artist cards: larger on iPhone 14 Pro resolution ── */
+@media (min-width: 390px) and (max-width: 767px) {
+  .artist-card { width: 90px; }
+  .artist-card-avatar { width: 72px; height: 72px; }
+  .artist-card-avatar span { font-size: 21px; }
+  .artist-card-name { font-size: 11.5px; }
+}
+
+/* ── Category cards: better sizing on 390pt+ ── */
+@media (min-width: 380px) {
+  .category-card { min-height: 96px; }
+  .category-card-label { font-size: 17px; }
+}
+
+/* ── Track cards: refined art background ── */
+.track-card-art {
+  background: linear-gradient(140deg, rgba(34, 7, 62, 0.95), rgba(10, 1, 22, 0.98));
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.06);
+}
+.track-card-art svg {
+  filter: drop-shadow(0 0 6px rgba(191,90,242,0.35));
+}
+
+/* ── Track card: hover/active improved ── */
+.track-card:hover {
+  background: rgba(30, 6, 52, 0.88);
+  border-color: rgba(191, 90, 242, 0.22);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.07), 0 4px 20px rgba(0,0,0,0.35);
+}
+
+/* ── Search bar glass ── */
+.search-bar-wrap {
+  background: rgba(4, 0, 9, 0.88);
+  backdrop-filter: blur(36px) saturate(220%);
+  -webkit-backdrop-filter: blur(36px) saturate(220%);
+}
+.search-bar-wrap::after {
+  content: '';
+  position: absolute;
+  bottom: 0; left: 0; right: 0;
+  height: 1px;
+  background: linear-gradient(90deg,
+    transparent 0%,
+    rgba(191, 90, 242, 0.35) 25%,
+    rgba(255, 55, 95, 0.25) 50%,
+    rgba(191, 90, 242, 0.35) 75%,
+    transparent 100%);
+  pointer-events: none;
+}
+
+/* ── Pills: slightly larger touch targets ── */
+.pill {
+  height: 36px;
+  padding: 0 17px;
+  font-size: 13px;
+}
+
+/* ── Pills wrap: gradient border ── */
+.pills-wrap::after {
+  content: '';
+  position: absolute;
+  bottom: 0; left: 0; right: 0;
+  height: 1px;
+  background: linear-gradient(90deg,
+    transparent 0%,
+    rgba(191, 90, 242, 0.28) 30%,
+    rgba(255, 55, 95, 0.18) 50%,
+    rgba(191, 90, 242, 0.28) 70%,
+    transparent 100%);
+  pointer-events: none;
+}
+
+/* ── Now playing hero artwork ── */
+.hero-art {
+  background: linear-gradient(140deg, rgba(34, 7, 62, 0.92), rgba(10, 1, 22, 0.98));
+  border-color: rgba(191, 90, 242, 0.35);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.07);
+}
+
+/* ── Bottom nav: gradient top accent line ── */
+.bottom-nav::before {
+  background: linear-gradient(90deg,
+    transparent 0%,
+    rgba(138, 43, 226, 0.55) 20%,
+    rgba(255, 55, 95, 0.42) 50%,
+    rgba(138, 43, 226, 0.55) 80%,
+    transparent 100%);
+}
+
+/* ── Bottom nav: label active gradient ── */
+.bnav-btn.active .bnav-label {
+  background: linear-gradient(90deg, #D97EFF, #FF375F);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  letter-spacing: 0.5px;
+}
+
+/* ── Bottom nav pill: more spring ── */
+.bnav-pill {
+  background: linear-gradient(135deg, rgba(191,90,242,0.20), rgba(255,55,95,0.12));
+  border: 1px solid rgba(191, 90, 242, 0.30);
+  box-shadow:
+    0 0 14px rgba(191,90,242,0.18),
+    inset 0 1px 0 rgba(255,255,255,0.08);
+}
+
+/* ── Mini player art thumbnail is a bit bigger ── */
+.npb-art {
+  width: 46px; height: 46px;
+  border-radius: 12px;
+  background: linear-gradient(140deg, rgba(34, 7, 62, 0.95), rgba(10, 1, 22, 0.98));
+  border: 1px solid rgba(191,90,242,0.38);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.07);
+}
+
+/* ── Mini player art svg slightly larger ── */
+.npb-art svg { width: 28px; height: 28px; }
+
+/* ── NPB title: slightly bolder ── */
+.npb-title {
+  font-size: 13.5px;
+  letter-spacing: 0.2px;
+}
+
+/* ── NPB controls buttons: larger touch target ── */
+.npb-btn { width: 40px; height: 40px; }
+
+/* ── FPO drag handle: wider + thicker (more iOS-native) ── */
+.fpo-drag-handle {
+  width: 44px;
+  height: 5px;
+  background: rgba(255, 255, 255, 0.25);
+  border-radius: 99px;
+}
+
+/* ── FPO: metadata text refinements ── */
+.fpo-meta {
+  padding: 0 4px;
+}
+.fpo-artist {
+  letter-spacing: 0.5px;
+  font-weight: 600;
+}
+
+/* ── FPO extra row: reduce top margin on small screens ── */
+@media (max-height: 750px) {
+  .fpo-extra-row { margin-top: 10px; padding: 10px 8px; }
+  .fpo-extra-btn { min-width: 64px; padding: 8px 12px; }
+}
+
+/* ── FPO: play button refined size ── */
+@media (min-width: 380px) {
+  .fpo-play-big { width: 72px; height: 72px; }
+  .fpo-play-big svg { width: 32px; height: 32px; }
+}
+
+/* ── FPO: progress bar thumb larger for easier scrub ── */
+.fpo-progress-thumb {
+  width: 18px; height: 18px;
+  box-shadow: 0 2px 10px rgba(0,0,0,0.55), 0 0 0 3px rgba(191,90,242,0.30);
+}
+
+/* ── FPO controls: symmetric spacing ── */
+.fpo-controls {
+  padding: 0 6px;
+  gap: 0;
+}
+
+/* ── FPO volume: slightly thicker bar track ── */
+.fpo-slider::before {
+  height: 4px;
+}
+.fpo-slider {
+  height: 4px;
+}
+
+/* ── Glass card common improvement ── */
+.glass {
+  background: rgba(18, 4, 32, 0.72);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.07), 0 6px 28px rgba(0,0,0,0.40);
+}
+
+/* ── Login card: refined input radius ── */
+.input-wrap input {
+  border-radius: 12px;
+}
+
+/* ── Login card: label spacing ── */
+.login-logo-wrap { margin-bottom: 34px; }
+
+/* ── Login error: improved visual ── */
+.login-error {
+  font-size: 12.5px;
+  background: rgba(255,55,95,0.08);
+  border-radius: 8px;
+  padding: 9px 12px;
+  margin-top: 4px;
+}
+
+/* ── Track card section: section heading typography ── */
+.tracks-heading { letter-spacing: 3px; }
+
+/* ── Home section: refined section title ── */
+.home-section-title { letter-spacing: 3px; }
+
+/* ── Category card: subtle top edge shimmer ── */
+.category-card::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 1px;
+  background: rgba(255,255,255,0.15);
+  border-radius: var(--radius-md) var(--radius-md) 0 0;
+  pointer-events: none;
+  z-index: 2;
+}
+
+/* ── Artist card avatar: inner glow on tap ── */
+.artist-card:active .artist-card-avatar {
+  box-shadow:
+    0 0 28px rgba(191,90,242,0.55),
+    inset 0 0 18px rgba(191,90,242,0.22);
+}
+
+/* ── iPhone 14 Pro (393pt) specific tunings ── */
+@media (min-width: 390px) and (max-width: 394px) {
+  /* Vault tab: fine-tune hero art size */
+  .hero-art { width: 92px; height: 92px; }
+  .hero-art-inner svg { width: 52px; height: 52px; }
+  /* Track card: slightly wider name field */
+  .track-card { gap: 13px; }
+  /* Category grid spacing */
+  .category-grid { gap: 11px; padding: 4px 20px 12px; }
+}
+
+/* ── Loader bar: glow intensity ── */
+.loader-bar {
+  box-shadow: 0 0 14px rgba(138,43,226,0.90), 0 0 4px rgba(255,55,95,0.40);
+}
+
+/* ── 999 tab: vibe hero slightly taller on iPhone 14 Pro ── */
+@media (min-width: 390px) and (max-width: 430px) {
+  .vibe-hero { height: 50vw; }
+  .vibe-quote { font-size: 30px; }
+  .vibe-quote-attr { font-size: 12.5px; letter-spacing: 2.5px; }
+}
+
+/* ── Lyric card: slightly better typography ── */
+.lyric-text { font-size: 13.5px; line-height: 1.65; }
+.lyric-source { font-size: 10.5px; letter-spacing: 2px; }
+
+/* ── Bio: better line height ── */
+@media (min-width: 390px) {
+  .bio-text { font-size: 14.5px; line-height: 1.78; }
+  .timeline-content p { font-size: 13.5px; line-height: 1.65; }
+}
+
+/* ── Queue panel: header refinement ── */
+.qp-title {
+  font-family: var(--font-display);
+  font-size: 22px;
+  letter-spacing: 3px;
+}
+
+/* ── Update toast: better border & shadow ── */
+.update-toast {
+  border: 1px solid rgba(191,90,242,0.55);
+  box-shadow: 0 6px 32px rgba(0,0,0,0.55), 0 0 20px rgba(138,43,226,0.22);
+}
+
+/* ── Vibe stat cards: refined glass ── */
+.vibe-stat-card {
+  border: 1px solid rgba(138,43,226,0.28);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.06), 0 4px 20px rgba(0,0,0,0.30);
+}
+
+/* ── Touch ripple: improved visibility ── */
+.track-ripple {
+  background: radial-gradient(circle, rgba(191,90,242,0.28), rgba(255,55,95,0.14));
+}
+
+/* ── Article cards: refined border on mobile ── */
+.article-card {
+  border: 1px solid rgba(191,90,242,0.18);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.05), 0 4px 20px rgba(0,0,0,0.30);
+}
+
+/* ── Articles section: horizontal scroll on phone ── */
+@media (max-width: 430px) {
+  .articles-section {
+    padding-left: 0;
+    padding-right: 0;
+    overflow: hidden;
+  }
+  .articles-grid {
+    display: flex;
+    flex-direction: row;
+    overflow-x: auto;
+    overflow-y: visible;
+    scrollbar-width: none;
+    gap: 12px;
+    padding: 0 12px 8px;
+    -webkit-overflow-scrolling: touch;
+    scroll-snap-type: x mandatory;
+  }
+  .articles-grid::-webkit-scrollbar { display: none; }
+  .article-card {
+    flex-shrink: 0;
+    width: 78vw;
+    max-width: 320px;
+    scroll-snap-align: start;
+  }
+}
+
+/* ── NPB progress strip: slightly thicker on retina ── */
+.npb-progress-strip {
+  height: 3px;
+}
+.npb-progress-strip-fill {
+  box-shadow: 0 0 10px rgba(191,90,242,0.75);
+}
+
+/* ── Login screen: tighter card on very tall screens ── */
+@media (min-height: 900px) {
+  .login-card {
+    padding: 44px 36px 40px;
+  }
+  .login-logo-ring {
+    width: 84px; height: 84px;
+  }
+  .login-logo-icon { width: 40px; height: 40px; }
+  .login-title { font-size: 58px !important; }
+}
+
+/* ── Ensure all focusable inputs show caret clearly ── */
+input, textarea {
+  caret-color: var(--purple);
+}
+
+/* ── FPO: slight scale-up on art when playing ── */
+.fpo-art.playing {
+  box-shadow:
+    0 36px 110px rgba(0,0,0,0.82),
+    0 0 0 1px rgba(255,255,255,0.06),
+    inset 0 1px 0 rgba(255,255,255,0.10);
+}
+
+/* ── Performance: paint-contain on scrollable content only ── */
+.track-card {
+  /* contain: style already set above */
+}
+
+/* ── Smooth content scroll deceleration ── */
+.player-content {
+  scroll-behavior: auto; /* let JS control; avoid janky css smooth scroll */
+  -webkit-overflow-scrolling: touch;
+}
+
+/* ── Viewport units fix for Safari (svh) ── */
+@supports (height: 1svh) {
+  body {
+    height: 100svh;
+  }
+  .screen {
+    height: 100svh;
+  }
+}
+
+
+/* ══════════════════════════════════════════════════════
+   ██████  2026 DESIGN SYSTEM — MAJOR UPGRADE
+══════════════════════════════════════════════════════ */
+
+/* ── Grain / Film noise overlay ── */
+#screen-player::after {
+  content: '';
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 1;
+  opacity: 0.028;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  background-size: 200px 200px;
+  animation: grainShift 0.14s steps(1) infinite;
+}
+@keyframes grainShift {
+  0%  { background-position: 0 0; }
+  20% { background-position: -40px -60px; }
+  40% { background-position: 20px 40px; }
+  60% { background-position: -60px 20px; }
+  80% { background-position: 40px -40px; }
+}
+
+/* ── Tab slide transitions ── */
+.tab-panel {
+  animation: none;
+  transition: none;
+}
+.tab-panel.slide-in-right {
+  animation: slideInRight 0.35s var(--ease) both;
+}
+.tab-panel.slide-in-left {
+  animation: slideInLeft 0.35s var(--ease) both;
+}
+.tab-panel.slide-out-right {
+  animation: slideOutRight 0.28s var(--ease) both;
+  pointer-events: none;
+}
+.tab-panel.slide-out-left {
+  animation: slideOutLeft 0.28s var(--ease) both;
+  pointer-events: none;
+}
+@keyframes slideInRight {
+  from { transform: translateX(40px); opacity: 0; }
+  to   { transform: translateX(0);    opacity: 1; }
+}
+@keyframes slideInLeft {
+  from { transform: translateX(-40px); opacity: 0; }
+  to   { transform: translateX(0);     opacity: 1; }
+}
+@keyframes slideOutRight {
+  from { transform: translateX(0);    opacity: 1; }
+  to   { transform: translateX(40px); opacity: 0; }
+}
+@keyframes slideOutLeft {
+  from { transform: translateX(0);     opacity: 1; }
+  to   { transform: translateX(-40px); opacity: 0; }
+}
+
+/* ── Skeleton loading (replaces spinner) ── */
+.skeleton-list { display: flex; flex-direction: column; gap: 6px; padding: 0 16px; animation: fadeIn 0.3s; }
+@keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+.skeleton-card {
+  display: flex; align-items: center; gap: 14px;
+  padding: 12px 14px;
+  background: rgba(20,4,38,0.78);
+  border-radius: var(--radius-md);
+  border: 1px solid rgba(255,255,255,0.05);
+  overflow: hidden;
+  position: relative;
+}
+.skeleton-card::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  transform: translateX(-100%);
+  background: linear-gradient(90deg, transparent 0%, rgba(191,90,242,0.07) 50%, transparent 100%);
+  animation: skeletonShimmer 1.6s infinite;
+}
+@keyframes skeletonShimmer {
+  to { transform: translateX(100%); }
+}
+.sk-num  { width: 20px; height: 14px; background: rgba(255,255,255,0.06); border-radius: 4px; flex-shrink: 0; }
+.sk-art  { width: 44px; height: 44px; background: rgba(255,255,255,0.06); border-radius: 10px; flex-shrink: 0; }
+.sk-info { flex: 1; }
+.sk-name { height: 14px; background: rgba(255,255,255,0.06); border-radius: 4px; margin-bottom: 8px; width: 65%; }
+.sk-sub  { height: 11px; background: rgba(255,255,255,0.04); border-radius: 4px; width: 40%; }
+.sk-btn  { width: 32px; height: 32px; background: rgba(255,255,255,0.04); border-radius: 50%; flex-shrink: 0; }
+
+/* ── Artist card — photo support ── */
+.artist-card-avatar img.artist-photo {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: 50%;
+  z-index: 0;
+  opacity: 0;
+  transition: opacity 0.5s var(--ease);
+}
+.artist-card-avatar img.artist-photo.loaded { opacity: 1; }
+.artist-card-avatar { position: relative; overflow: hidden; }
+.artist-card-avatar span { z-index: 1; transition: opacity 0.4s; }
+.artist-card-avatar.has-photo span { opacity: 0; }
+
+/* ── Track card — album art tint ── */
+.track-card-art-img {
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  object-fit: cover;
+  opacity: 0.15;
+  z-index: 0;
+  pointer-events: none;
+}
+
+/* ── Track card entrance: improved stagger ── */
+.track-card.reveal-ready {
+  opacity: 0;
+  transform: translateY(18px);
+  transition: opacity 0.4s var(--ease), transform 0.42s var(--ease-spring);
+}
+.track-card.revealed {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+/* ── FPO: liquid morph background ── */
+.fpo-bg {
+  transition: background 0.8s var(--ease);
+}
+.fpo-bg::before {
+  content: '';
+  position: absolute;
+  inset: -30%;
+  background: conic-gradient(from 0deg at 50% 40%,
+    rgba(191,90,242,0.18),
+    rgba(255,55,95,0.12),
+    rgba(10,132,255,0.10),
+    rgba(191,90,242,0.18));
+  animation: fpoMorph 12s linear infinite;
+  filter: blur(60px);
+  z-index: 0;
+  opacity: 0.8;
+  border-radius: 50%;
+}
+@keyframes fpoMorph {
+  from { transform: rotate(0deg)   scale(1); }
+  50%  { transform: rotate(180deg) scale(1.15); }
+  to   { transform: rotate(360deg) scale(1); }
+}
+
+/* ── FPO: improved art shadow when playing ── */
+.fpo-art.playing {
+  box-shadow:
+    0 40px 120px rgba(0,0,0,0.85),
+    0 0 0 1px rgba(255,255,255,0.08),
+    0 0 60px rgba(191,90,242,0.30),
+    inset 0 1px 0 rgba(255,255,255,0.12);
+}
+
+/* ── FPO: content tight on very short phones (landscape / SE) ── */
+@media (max-height: 640px) {
+  .fpo-art-wrap { margin-bottom: 8px; }
+  .fpo-art      { width: 130px; height: 130px; }
+  .fpo-art svg  { width: 80px; height: 80px; }
+  .fpo-meta     { margin-bottom: 8px; }
+  .fpo-visualizer { height: 28px; }
+  .fpo-extra-row  { display: none; }
+}
+
+/* ── Home hero: entrance animation ── */
+.home-hero-eyebrow { animation: heroFadeUp 0.7s 0.1s var(--ease) both; }
+.home-hero-title   { animation: heroFadeUp 0.7s 0.2s var(--ease) both; }
+.home-hero-sub     { animation: heroFadeUp 0.7s 0.3s var(--ease) both; }
+.home-hero-actions { animation: heroFadeUp 0.7s 0.4s var(--ease) both; }
+.home-hero-stats   { animation: heroFadeUp 0.7s 0.5s var(--ease) both; }
+@keyframes heroFadeUp {
+  from { opacity: 0; transform: translateY(22px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+/* ── Animated stat number (count-up) ── */
+.home-stat-num,
+.vibe-stat-num {
+  transition: transform 0.3s var(--ease-spring);
+}
+.home-stat-num.pop,
+.vibe-stat-num.pop {
+  animation: statPop 0.45s var(--ease-spring);
+}
+@keyframes statPop {
+  0%   { transform: scale(1); }
+  40%  { transform: scale(1.20); color: var(--purple); }
+  100% { transform: scale(1); }
+}
+
+/* ── Button press ripple (all interactive) ── */
+.bnav-btn:active .bnav-icon-wrap,
+.fpo-ctrl-btn:active,
+.npb-btn:active,
+.home-hero-play-btn:active,
+.home-hero-shuffle-btn:active {
+  transform: scale(0.88);
+  transition: transform 0.1s;
+}
+
+/* ── Track card: 2026 redesign ── */
+.track-card {
+  /* improved glass */
+  background: linear-gradient(135deg,
+    rgba(22, 5, 38, 0.82) 0%,
+    rgba(16, 3, 28, 0.78) 100%);
+  border: 1px solid rgba(255,255,255,0.065);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.05), 0 2px 12px rgba(0,0,0,0.30);
+  transition: background 0.22s var(--ease), border-color 0.22s,
+              transform 0.18s var(--ease-bounce), box-shadow 0.28s,
+              opacity 0.4s var(--ease);
+}
+.track-card:hover {
+  background: linear-gradient(135deg,
+    rgba(40, 8, 66, 0.90) 0%,
+    rgba(30, 5, 52, 0.85) 100%);
+  border-color: rgba(191,90,242,0.25);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.07),
+              0 4px 20px rgba(0,0,0,0.40),
+              0 0 0 1px rgba(191,90,242,0.12);
+}
+.track-card.active {
+  background: linear-gradient(135deg,
+    rgba(50,10,80, 0.92) 0%,
+    rgba(38, 6,62,  0.88) 100%);
+  border-color: rgba(191,90,242,0.35);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.10),
+              0 6px 28px rgba(191,90,242,0.22),
+              0 0 0 1px rgba(191,90,242,0.20);
+}
+
+/* ── Bottom nav: subtle neon glow on active icon ── */
+.bnav-btn.active .bnav-icon-wrap {
+  filter: drop-shadow(0 0 8px rgba(191,90,242,0.60));
+}
+
+/* ── Pills: glow effect on active ── */
+.pill.active {
+  box-shadow:
+    0 4px 22px rgba(191,90,242,0.48),
+    0 0 0 1px rgba(191,90,242,0.28),
+    0 0 28px rgba(191,90,242,0.20),
+    inset 0 1px 0 rgba(255,255,255,0.18);
+}
+
+/* ── NPB: improved glassmorphism ── */
+.now-playing-bar {
+  background: rgba(10, 1, 20, 0.94);
+  box-shadow:
+    0 -4px 32px rgba(191,90,242,0.08),
+    0 10px 48px rgba(0,0,0,0.70),
+    0 0 0 0.5px rgba(191,90,242,0.22),
+    inset 0 1px 0 rgba(255,255,255,0.08),
+    inset 0 -1px 0 rgba(0,0,0,0.15);
+}
+
+/* ── Search bar: glow on focus ── */
+.search-bar-inner input:focus {
+  border-color: var(--purple);
+  background: rgba(191,90,242,0.08);
+  box-shadow: 0 0 0 3px rgba(191,90,242,0.12), inset 0 1px 4px rgba(0,0,0,0.20);
+}
+
+/* ── Login card: 2026 glass upgrade ── */
+.login-card {
+  background: linear-gradient(160deg,
+    rgba(18, 3, 32, 0.92) 0%,
+    rgba(10, 1, 20, 0.96) 100%);
+  box-shadow:
+    0 40px 100px rgba(0,0,0,0.75),
+    0 0 0 1px rgba(255,255,255,0.07),
+    inset 0 1px 0 rgba(255,255,255,0.10);
+}
+
+/* ── Category cards: shimmer on hover ── */
+.category-card::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(135deg, rgba(255,255,255,0.09) 0%, transparent 50%);
+  pointer-events: none;
+  transition: opacity 0.2s;
+  opacity: 1;
+}
+@media (hover: hover) {
+  .category-card:hover::after { opacity: 0.5; }
+}
+
+/* ── Header logo: improved gradient animation ── */
+.header-logo {
+  background: linear-gradient(135deg, var(--purple), var(--pink), var(--purple));
+  background-size: 200% 200%;
+  animation: logoGradientShift 4s ease infinite, headerLogoPulse 4s ease-in-out infinite;
+}
+@keyframes logoGradientShift {
+  0%   { background-position: 0% 50%; }
+  50%  { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
+
+/* ── Artist card: shine border animation ── */
+.artist-card-avatar::after {
+  content: '';
+  position: absolute;
+  inset: -2px;
+  border-radius: 50%;
+  background: conic-gradient(
+    from 0deg,
+    var(--ac),
+    transparent 40%,
+    transparent 60%,
+    var(--ac));
+  animation: borderRotate 3s linear infinite;
+  z-index: -1;
+  opacity: 0.6;
+}
+@keyframes borderRotate {
+  to { transform: rotate(360deg); }
+}
+
+/* ── Improved audio visualizer color ── */
+.fpo-visualizer {
+  filter: drop-shadow(0 0 6px rgba(191,90,242,0.5));
+}
+
+/* ── Home section: staggered entrance ── */
+.home-section {
+  animation: sectionFadeUp 0.6s var(--ease) both;
+}
+.home-section:nth-child(2) { animation-delay: 0.05s; }
+.home-section:nth-child(3) { animation-delay: 0.10s; }
+.home-section:nth-child(4) { animation-delay: 0.15s; }
+.home-section:nth-child(5) { animation-delay: 0.20s; }
+.home-section:nth-child(6) { animation-delay: 0.25s; }
+@keyframes sectionFadeUp {
+  from { opacity: 0; transform: translateY(16px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+/* ── Timeline: animated dot pulse ── */
+.timeline-dot-glow {
+  animation: timelinePulse 2s ease-in-out infinite;
+}
+@keyframes timelinePulse {
+  0%,100% { box-shadow: 0 0 0 0 rgba(191,90,242,0); }
+  50%     { box-shadow: 0 0 0 8px rgba(191,90,242,0.25), 0 0 20px rgba(191,90,242,0.45); }
+}
+
+/* ── Extra small screen (iPhone SE 375px) track card fix ── */
+@media (max-width: 380px) {
+  .track-card { gap: 10px; padding: 10px 10px; }
+  .track-card-num  { display: none; }
+  .track-card-name { font-size: 13px; }
+  .track-card-sub  { font-size: 11px; }
+  .track-card-art  { width: 40px; height: 40px; }
+  .fpo-title  { font-size: 20px; }
+}
+
+/* ── Very wide (tablet/desktop) FPO art size ── */
+@media (min-width: 768px) {
+  .fpo-art { width: 280px; height: 280px; }
+}
+
+/* ── Haptic-style scale on all tappable cards ── */
+.category-card:active,
+.artist-card:active,
+.article-card:active,
+.vibe-card:active {
+  transform: scale(0.96) !important;
+}
+
+/* ── Neon glow on home hero title ── */
+.home-hero-title {
+  text-shadow:
+    0 0 40px rgba(191,90,242,0.45),
+    0 0 80px rgba(191,90,242,0.18);
+}
+
+/* ── Scrollbar 2026 style ── */
+.player-content::-webkit-scrollbar { width: 2px; }
+.player-content::-webkit-scrollbar-thumb {
+  background: linear-gradient(to bottom, var(--purple), var(--pink));
+  border-radius: 99px;
+}
+
+/* ── Loading skeleton: section header ── */
+.tracks-section > .skeleton-list {
+  padding: 0;
 }

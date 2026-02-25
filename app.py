@@ -104,6 +104,13 @@ app = Flask(__name__)
 # falling back to a random key means sessions reset on every server restart (fine for dev).
 app.secret_key = os.environ.get('SECRET_KEY') or secrets.token_hex(32)
 
+# On Vercel (HTTPS) the session cookie must be Secure + SameSite=Lax so the browser
+# sends it with fetch() requests. In local dev (HTTP) keep Secure=False.
+_is_prod = bool(os.environ.get('VERCEL') or os.environ.get('SESSION_SECURE'))
+app.config['SESSION_COOKIE_SECURE']   = _is_prod
+app.config['SESSION_COOKIE_HTTPONLY'] = True
+app.config['SESSION_COOKIE_SAMESITE'] = 'Lax'
+
 # ── Auth helpers ──────────────────────────────────────────
 def require_auth(f):
     """Decorator: return 401 JSON if the user is not logged in."""
