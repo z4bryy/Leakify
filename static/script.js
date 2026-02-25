@@ -419,30 +419,62 @@ function setupLoginEvents() {
 }
 
 // ══════════════════════════════════════════
-//  CSS LOADER SCREEN (replaces video splash)
+//  SPLASH LOADER (2026 redesign)
 // ══════════════════════════════════════════
 function startLoaderScreen() {
   screenLoader.classList.add('active');
   screenLoader.style.display = 'flex';
+
+  // ── Progress bar stages ──
   const bar = $('loader-bar');
+  const stages = [
+    { pct: '18%',  delay: 300  },
+    { pct: '42%',  delay: 700  },
+    { pct: '68%',  delay: 1150 },
+    { pct: '88%',  delay: 1650 },
+    { pct: '100%', delay: 2050 },
+  ];
   if (bar) {
     bar.style.width = '0%';
     bar.style.transition = 'none';
-    requestAnimationFrame(() => {
-      requestAnimationFrame(() => {
-        bar.style.transition = 'width 2.2s cubic-bezier(0.4, 0, 0.2, 1)';
-        bar.style.width = '100%';
-      });
+    stages.forEach(({ pct, delay }) => {
+      setTimeout(() => {
+        bar.style.transition = 'width 0.45s cubic-bezier(0.4, 0, 0.2, 1)';
+        bar.style.width = pct;
+      }, delay);
     });
   }
+
+  // ── Cycling status messages ──
+  const statusEl = $('sl-status');
+  const messages = [
+    'Initializing vault\u2026',
+    'Decrypting tracks\u2026',
+    'Loading unreleased\u2026',
+    'Almost ready\u2026',
+    'Welcome back \u{1F525}',
+  ];
+  let msgIdx = 0;
+  function nextMsg() {
+    if (!statusEl || msgIdx >= messages.length) return;
+    statusEl.style.opacity = '0';
+    setTimeout(() => {
+      statusEl.textContent = messages[msgIdx++];
+      statusEl.style.opacity = '1';
+      if (msgIdx < messages.length) setTimeout(nextMsg, 500);
+    }, 220);
+  }
+  setTimeout(nextMsg, 1600);
+
+  // ── Exit ──
   setTimeout(() => {
     screenLoader.classList.add('fade-out');
     setTimeout(() => {
       screenLoader.classList.remove('active', 'fade-out');
       screenLoader.style.display = 'none';
       showScreen(screenLogin);
-    }, 600);
-  }, 2600);
+    }, 650);
+  }, 2700);
 }
 
 // ══════════════════════════════════════════

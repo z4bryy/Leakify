@@ -36,17 +36,66 @@
 
 <!-- ═══════════════ SPLASH LOADER ═══════════════ -->
 <div id="screen-loader" class="screen active">
-  <div class="loader-bg-glow"></div>
-  <div class="loader-content">
-    <div class="loader-999-wrap">
-      <div class="loader-ring loader-ring-1"></div>
-      <div class="loader-ring loader-ring-2"></div>
-      <div class="loader-ring loader-ring-3"></div>
-      <span class="loader-999-text">999</span>
+  <!-- Aurora background blobs -->
+  <div class="sl-aurora">
+    <div class="sl-blob sl-blob-1"></div>
+    <div class="sl-blob sl-blob-2"></div>
+    <div class="sl-blob sl-blob-3"></div>
+  </div>
+
+  <!-- 999 watermark -->
+  <div class="sl-watermark" aria-hidden="true">999</div>
+
+  <!-- Center stage -->
+  <div class="sl-center">
+
+    <!-- Vinyl disc -->
+    <div class="sl-disc-wrap">
+      <div class="sl-disc">
+        <div class="sl-disc-inner">
+          <svg class="sl-disc-icon" viewBox="0 0 48 48" fill="none">
+            <circle cx="24" cy="24" r="22" stroke="rgba(191,90,242,0.35)" stroke-width="1.5"/>
+            <path d="M20 16v16l12-8-12-8z" fill="rgba(191,90,242,0.9)"/>
+          </svg>
+        </div>
+        <div class="sl-disc-groove sl-groove-1"></div>
+        <div class="sl-disc-groove sl-groove-2"></div>
+        <div class="sl-disc-groove sl-groove-3"></div>
+      </div>
+      <div class="sl-disc-glow"></div>
+      <!-- Orbit ring -->
+      <div class="sl-orbit sl-orbit-1">
+        <span class="sl-orbit-dot"></span>
+      </div>
+      <div class="sl-orbit sl-orbit-2">
+        <span class="sl-orbit-dot"></span>
+      </div>
     </div>
-    <div class="loader-brand">LEAKIFY</div>
-    <div class="loader-tag">Private Vault · Unreleased</div>
-    <div class="loader-bar-wrap"><div class="loader-bar" id="loader-bar"></div></div>
+
+    <!-- Brand title with per-letter reveal -->
+    <div class="sl-brand" aria-label="LEAKIFY">
+      <span class="sl-letter" style="--i:0">L</span><span
+           class="sl-letter" style="--i:1">E</span><span
+           class="sl-letter" style="--i:2">A</span><span
+           class="sl-letter" style="--i:3">K</span><span
+           class="sl-letter" style="--i:4">I</span><span
+           class="sl-letter sl-pink" style="--i:5">F</span><span
+           class="sl-letter sl-pink" style="--i:6">Y</span>
+    </div>
+
+    <p class="sl-tagline">Private Vault &middot; Unreleased &middot; Never Heard</p>
+
+    <!-- Status messages -->
+    <p class="sl-status" id="sl-status">Initializing vault…</p>
+
+  </div>
+
+  <!-- Bottom progress bar -->
+  <div class="sl-progress-wrap">
+    <div class="sl-progress-track">
+      <div class="sl-progress-fill" id="loader-bar"></div>
+      <div class="sl-progress-shimmer"></div>
+    </div>
   </div>
 </div>
 
