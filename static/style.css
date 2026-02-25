@@ -2680,10 +2680,10 @@ body {
   align-items: center;
   justify-content: center;
   position: relative;
+  overflow: hidden;
   /* Fallback box-shadow */
   box-shadow: 0 0 20px rgba(191,90,242,0.35), inset 0 0 12px rgba(191,90,242,0.18);
   box-shadow: 0 0 20px color-mix(in srgb, var(--ac) 35%, transparent), inset 0 0 12px color-mix(in srgb, var(--ac) 18%, transparent);
-  overflow: visible;
 }
 .artist-card-avatar span {
   font-family: var(--font-display);
@@ -4213,7 +4213,6 @@ input, textarea {
   transition: opacity 0.5s var(--ease);
 }
 .artist-card-avatar img.artist-photo.loaded { opacity: 1; }
-.artist-card-avatar { position: relative; overflow: hidden; }
 .artist-card-avatar span { z-index: 1; transition: opacity 0.4s; }
 .artist-card-avatar.has-photo span { opacity: 0; }
 
