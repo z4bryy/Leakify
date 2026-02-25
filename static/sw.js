@@ -1,4 +1,4 @@
-const CACHE_NAME = 'leakify-v8-loader-redesign';
+const CACHE_NAME = 'leakify-v9-login-redesign';
 const STATIC_ASSETS = [
   '/',
   '/static/style.css',

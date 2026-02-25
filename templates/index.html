@@ -101,48 +101,91 @@
 
 <!-- ═══════════════ LOGIN SCREEN ═══════════════ -->
 <div id="screen-login" class="screen">
-  <div class="login-bg-glow"></div>
-  <div class="login-card">
-    <div class="login-logo-wrap">
-      <div class="login-logo-ring">
-        <svg class="login-logo-icon" viewBox="0 0 60 60" fill="none">
-          <circle cx="30" cy="30" r="28" stroke="url(#logoGrad)" stroke-width="2.5"/>
-          <path d="M24 20v20l16-10L24 20z" fill="url(#logoGrad2)"/>
-          <defs>
-            <linearGradient id="logoGrad" x1="0" y1="0" x2="60" y2="60" gradientUnits="userSpaceOnUse">
-              <stop stop-color="#BF5AF2"/>
-              <stop offset="1" stop-color="#FF375F"/>
-            </linearGradient>
-            <linearGradient id="logoGrad2" x1="20" y1="20" x2="44" y2="40" gradientUnits="userSpaceOnUse">
-              <stop stop-color="#BF5AF2"/>
-              <stop offset="1" stop-color="#FF375F"/>
-            </linearGradient>
-          </defs>
-        </svg>
+
+  <!-- aurora background -->
+  <div class="lx-aurora">
+    <div class="lx-blob lx-b1"></div>
+    <div class="lx-blob lx-b2"></div>
+    <div class="lx-blob lx-b3"></div>
+  </div>
+  <div class="lx-grid" aria-hidden="true"></div>
+
+  <div class="lx-wrap">
+
+    <!-- Hero -->
+    <div class="lx-hero">
+      <div class="lx-badge">&#9679;&nbsp; PRIVATE VAULT</div>
+
+      <!-- Mini disc -->
+      <div class="lx-disc-wrap">
+        <div class="lx-disc">
+          <div class="lx-disc-center">
+            <svg viewBox="0 0 40 40" fill="none">
+              <path d="M16 12v16l12-8-12-8z" fill="url(#lxGrad)"/>
+              <defs>
+                <linearGradient id="lxGrad" x1="0" y1="0" x2="40" y2="40" gradientUnits="userSpaceOnUse">
+                  <stop stop-color="#BF5AF2"/>
+                  <stop offset="1" stop-color="#FF375F"/>
+                </linearGradient>
+              </defs>
+            </svg>
+          </div>
+          <div class="lx-groove lx-g1"></div>
+          <div class="lx-groove lx-g2"></div>
+        </div>
+        <div class="lx-disc-glow"></div>
+        <div class="lx-orbit lx-or1"><span class="lx-dot"></span></div>
+        <div class="lx-orbit lx-or2"><span class="lx-dot lx-dot-pink"></span></div>
       </div>
-      <h1 class="login-title">LEAKIFY</h1>
-      <p class="login-subtitle">JuiceWrld Private Vault</p>
+
+      <!-- Per-letter title -->
+      <h1 class="lx-title" aria-label="LEAKIFY">
+        <span class="lx-l" style="--i:0">L</span><span
+             class="lx-l" style="--i:1">E</span><span
+             class="lx-l" style="--i:2">A</span><span
+             class="lx-l" style="--i:3">K</span><span
+             class="lx-l lx-t-pink" style="--i:4">I</span><span
+             class="lx-l lx-t-pink" style="--i:5">F</span><span
+             class="lx-l lx-t-pink" style="--i:6">Y</span>
+      </h1>
+      <p class="lx-subtitle">JuiceWrld &middot; Private Vault</p>
     </div>
-    <form id="login-form" autocomplete="on">
-      <div class="input-group" id="login-input-group">
-        <div class="input-wrap">
-          <svg class="input-icon" viewBox="0 0 24 24" fill="currentColor"><path d="M12 12c2.7 0 4.8-2.1 4.8-4.8S14.7 2.4 12 2.4 7.2 4.5 7.2 7.2 9.3 12 12 12zm0 2.4c-3.2 0-9.6 1.6-9.6 4.8v2.4h19.2v-2.4c0-3.2-6.4-4.8-9.6-4.8z"/></svg>
-          <label for="login-user" class="sr-only">Username</label>
-          <input type="text" id="login-user" placeholder="USERNAME" autocomplete="username" spellcheck="false" autocapitalize="none" autocorrect="off" inputmode="text" />
+
+    <!-- Card with form -->
+    <div class="lx-card">
+      <form id="login-form" autocomplete="on">
+        <div class="lx-fields">
+
+          <div class="lx-field">
+            <svg class="lx-field-icon" viewBox="0 0 24 24" fill="currentColor">
+              <path d="M12 12c2.7 0 4.8-2.1 4.8-4.8S14.7 2.4 12 2.4 7.2 4.5 7.2 7.2 9.3 12 12 12zm0 2.4c-3.2 0-9.6 1.6-9.6 4.8v2.4h19.2v-2.4c0-3.2-6.4-4.8-9.6-4.8z"/>
+            </svg>
+            <label for="login-user" class="sr-only">Username</label>
+            <input type="text" id="login-user" class="lx-input" placeholder="Username"
+              autocomplete="username" spellcheck="false" autocapitalize="none" autocorrect="off" />
+            <div class="lx-field-line"></div>
+          </div>
+
+          <div class="lx-field">
+            <svg class="lx-field-icon" viewBox="0 0 24 24" fill="currentColor">
+              <path d="M18 8h-1V6c0-2.8-2.2-5-5-5S7 3.2 7 6v2H6c-1.1 0-2 .9-2 2v10c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V10c0-1.1-.9-2-2-2zm-6 9c-1.1 0-2-.9-2-2s.9-2 2-2 2 .9 2 2-.9 2-2 2zm3.1-9H8.9V6c0-1.7 1.4-3.1 3.1-3.1 1.7 0 3.1 1.4 3.1 3.1v2z"/>
+            </svg>
+            <label for="login-pass" class="sr-only">Password</label>
+            <input type="password" id="login-pass" class="lx-input" placeholder="Password"
+              autocomplete="current-password" autocapitalize="none" autocorrect="off" />
+            <div class="lx-field-line"></div>
+          </div>
+
         </div>
-        <div class="input-wrap">
-          <svg class="input-icon" viewBox="0 0 24 24" fill="currentColor"><path d="M18 8h-1V6c0-2.8-2.2-5-5-5S7 3.2 7 6v2H6c-1.1 0-2 .9-2 2v10c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V10c0-1.1-.9-2-2-2zm-6 9c-1.1 0-2-.9-2-2s.9-2 2-2 2 .9 2 2-.9 2-2 2zm3.1-9H8.9V6c0-1.7 1.4-3.1 3.1-3.1 1.7 0 3.1 1.4 3.1 3.1v2z"/></svg>
-          <label for="login-pass" class="sr-only">Password</label>
-          <input type="password" id="login-pass" placeholder="PASSWORD" autocomplete="current-password" autocapitalize="none" autocorrect="off" />
-        </div>
-      </div>
-      <div id="login-error" class="login-error hidden">Wrong credentials. Try again.</div>
-      <button type="submit" class="login-btn">
-        <span class="login-btn-text">ENTER THE VAULT</span>
-        <svg viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>
-      </button>
-    </form>
-    <p class="login-footer">999 // WRLD ON DRUGS</p>
+        <div id="login-error" class="login-error hidden">⚠ Wrong credentials. Try again.</div>
+        <button type="submit" class="login-btn">
+          <span class="login-btn-text">ENTER THE VAULT</span>
+          <svg viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>
+        </button>
+      </form>
+      <p class="lx-footer">999 &nbsp;//&nbsp; WRLD ON DRUGS</p>
+    </div>
+
   </div>
 </div>
 
