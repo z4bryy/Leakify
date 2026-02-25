@@ -149,6 +149,48 @@ function updateVolumeFill() {
   if (fvt) fvt.style.left  = pct + '%';
 }
 
+// ── Media Session API — iOS Lock Screen / Control Center / AirPods ──
+// Without this, iOS PWA suspends audio when the screen locks or app backgrounds.
+function updateMediaSession(song) {
+  if (!('mediaSession' in navigator)) return;
+  navigator.mediaSession.metadata = new MediaMetadata({
+    title:  song.display,
+    artist: song.artist,
+    album:  'Leakify · Private Vault',
+    artwork: [
+      { src: '/static/icon-192.png', sizes: '192x192', type: 'image/png' },
+      { src: '/static/icon-512.png', sizes: '512x512', type: 'image/png' },
+    ],
+  });
+  // Register hardware control handlers (headphones, lock screen, CarPlay, etc.)
+  navigator.mediaSession.setActionHandler('play', () => {
+    audio.play().then(() => {
+      isPlaying = true;
+      updatePlayButtons(true);
+      heroArt.classList.add('playing');
+      heroEq.classList.add('active');
+      fpoArt.classList.add('playing');
+      nowPlayingBar.classList.add('playing');
+      setVinylSpin(true);
+      navigator.mediaSession.playbackState = 'playing';
+    }).catch(() => {});
+  });
+  navigator.mediaSession.setActionHandler('pause', () => {
+    audio.pause();
+    isPlaying = false;
+    heroArt.classList.remove('playing');
+    heroEq.classList.remove('active');
+    fpoArt.classList.remove('playing');
+    nowPlayingBar.classList.remove('playing');
+    updatePlayButtons(false);
+    setVinylSpin(false);
+    navigator.mediaSession.playbackState = 'paused';
+  });
+  navigator.mediaSession.setActionHandler('previoustrack', prevSong);
+  navigator.mediaSession.setActionHandler('nexttrack',     nextSong);
+  navigator.mediaSession.playbackState = 'playing';
+}
+
 // ── DOM helpers ───────────────────────────────
 const $  = (id) => document.getElementById(id);
 const $$ = (sel) => document.querySelectorAll(sel);
@@ -694,6 +736,9 @@ function onPlayStart(song) {
   // Dynamic tint
   setArtTint(song.artist);
 
+  // iOS Media Session (lock screen / Control Center)
+  updateMediaSession(song);
+
   // Sync FPO like button
   syncFpoLikeBtn(song.filename);
 
@@ -771,6 +816,7 @@ function togglePlay() {
     nowPlayingBar.classList.remove('playing');
     updatePlayButtons(false);
     setVinylSpin(false);
+    if ('mediaSession' in navigator) navigator.mediaSession.playbackState = 'paused';
   } else {
     audio.play().then(() => {
       isPlaying = true;
@@ -780,6 +826,7 @@ function togglePlay() {
       nowPlayingBar.classList.add('playing');
       updatePlayButtons(true);
       setVinylSpin(true);
+      if ('mediaSession' in navigator) navigator.mediaSession.playbackState = 'playing';
     });
   }
 }
@@ -890,8 +937,9 @@ function closeFPO() {
   let startY = 0, startX = 0, dragging = false, startTime = 0;
 
   fpo.addEventListener('touchstart', e => {
-    // Don't initiate drag when touching any input (range sliders, etc.)
+    // Don't initiate drag when touching any input or the volume bar
     if (e.target.tagName === 'INPUT') return;
+    if (e.target.closest('.fpo-volume-wrap') || e.target.closest('#fpo-vol-bar')) return;
     // Only initiate from the handle area or top 80px of overlay (not content scroll)
     const touch = e.touches[0];
     startY = touch.clientY;
@@ -981,9 +1029,16 @@ function setupAllEvents() {
     isVolumeSeeking = true;
     fpoVolBar.classList.add('seeking');
     volumeAt(e);
-  }, { passive: true });
+    e.stopPropagation(); // prevent FPO swipe-down from stealing the gesture
+    e.preventDefault();  // prevent iOS scroll from overriding horizontal drag
+  }, { passive: false }); // non-passive required for preventDefault on iOS
   window.addEventListener('mousemove', (e) => { if (isVolumeSeeking) volumeAt(e); });
-  window.addEventListener('touchmove', (e) => { if (isVolumeSeeking) volumeAt(e); }, { passive: true });
+  window.addEventListener('touchmove', (e) => {
+    if (isVolumeSeeking) {
+      volumeAt(e);
+      e.preventDefault(); // block iOS scroll while dragging volume
+    }
+  }, { passive: false });
   window.addEventListener('mouseup', () => {
     if (isVolumeSeeking) { isVolumeSeeking = false; fpoVolBar.classList.remove('seeking'); }
   });
@@ -998,6 +1053,13 @@ function setupAllEvents() {
 
   // Audio events
   audio.addEventListener('timeupdate', updateProgress);
+  // Keep mediaSession.playbackState in sync
+  audio.addEventListener('play',  () => {
+    if ('mediaSession' in navigator) navigator.mediaSession.playbackState = 'playing';
+  });
+  audio.addEventListener('pause', () => {
+    if ('mediaSession' in navigator) navigator.mediaSession.playbackState = 'paused';
+  });
   audio.addEventListener('ended', () => {
     if (repeat) {
       audio.currentTime = 0;
@@ -1126,6 +1188,30 @@ function setupAllEvents() {
       e.preventDefault();
     }
   }, { passive: false });
+
+  // ── iOS PWA: resume audio when returning from background / home screen ──
+  // visibilitychange fires when user switches apps or locks screen.
+  document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'visible') {
+      // Resume suspended AudioContext (browser policy suspends after inactivity)
+      if (audioCtx && audioCtx.state === 'suspended') audioCtx.resume();
+      // If track was playing but iOS paused the audio element, restart it
+      if (isPlaying && audio.paused && audio.src) {
+        audio.play().catch(() => {});
+      }
+    } else {
+      // App going to background — update mediaSession so iOS keeps control
+      if ('mediaSession' in navigator && isPlaying) {
+        navigator.mediaSession.playbackState = 'playing';
+      }
+    }
+  });
+  // pageshow fires on iOS PWA when restoring the page from the bfcache
+  window.addEventListener('pageshow', (e) => {
+    if (isPlaying && audio.paused && audio.src) {
+      audio.play().catch(() => {});
+    }
+  });
 
   // ── Bottom Navigation ──
   setupBottomNav();
