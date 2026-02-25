@@ -1,4 +1,4 @@
-const CACHE_NAME = 'leakify-v11-track-rows';
+const CACHE_NAME = 'leakify-v12-full-overhaul';
 const STATIC_ASSETS = [
   '/',
   '/static/style.css',
