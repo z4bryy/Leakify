@@ -5618,66 +5618,240 @@ input, textarea {
    ║  CARDS — TRACK · ARTIST · CATEGORY · PREVIEW
    ╚══════════════════════════════════════════════════════ */
 
-/* ─── TRACK CARDS ─────────────────────────────── */
+/* ─── TRACK CARDS — CLEAN SPOTIFY/APPLE ROWS ─── */
 .track-card {
-  background: linear-gradient(145deg,
-    rgba(20, 5, 38, 0.86) 0%,
-    rgba(13, 2, 26, 0.82) 100%) !important;
-  border: 1px solid rgba(255,255,255,0.062) !important;
-  border-radius: 18px !important;
-  box-shadow:
-    inset 0 1px 0 rgba(255,255,255,0.055),
-    0 2px 12px rgba(0,0,0,0.45),
-    0 1px 3px rgba(0,0,0,0.30) !important;
-  transition: background 0.22s var(--ease), border-color 0.22s,
-              transform 0.18s var(--ease-bounce), box-shadow 0.28s !important;
+  display: flex !important;
+  align-items: center !important;
+  gap: 12px !important;
+  padding: 9px 14px 9px 10px !important;
+  background: transparent !important;
+  border: none !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+  border-bottom: 0.5px solid rgba(255,255,255,0.055) !important;
+  position: relative;
+  cursor: pointer;
+  transition: background 0.14s !important;
+  /* override any leftover card styles */
+  min-height: 60px;
 }
-.track-card:hover {
-  background: linear-gradient(145deg,
-    rgba(38, 8, 68, 0.92) 0%,
-    rgba(28, 5, 52, 0.88) 100%) !important;
-  border-color: rgba(182, 110, 255, 0.22) !important;
-  box-shadow:
-    inset 0 1px 0 rgba(255,255,255,0.08),
-    0 4px 20px rgba(0,0,0,0.50),
-    0 0 0 1px rgba(182, 110, 255, 0.12) !important;
+.track-card:last-child { border-bottom: none !important; }
+
+/* Press flash */
+.track-card:active {
+  background: rgba(182, 110, 255, 0.07) !important;
+  transform: none !important;
 }
-.track-card.active {
-  background: linear-gradient(145deg,
-    rgba(55, 12, 90, 0.94) 0%,
-    rgba(40, 8, 70, 0.90) 100%) !important;
-  border-color: rgba(182, 110, 255, 0.42) !important;
-  box-shadow:
-    inset 0 1px 0 rgba(255,255,255,0.12),
-    0 6px 28px rgba(182, 110, 255, 0.28),
-    0 0 0 1px rgba(182, 110, 255, 0.25),
-    0 0 50px rgba(182, 110, 255, 0.10) !important;
-}
-.track-card.active::before { opacity: 1; }
-.track-card.active:active {
-  background: linear-gradient(145deg, rgba(72, 16, 112, 0.95), rgba(55, 10, 88, 0.92)) !important;
+@media (hover: hover) {
+  .track-card:hover {
+    background: rgba(255,255,255,0.035) !important;
+  }
 }
 
-/* Track art */
+/* Active (now playing) row */
+.track-card.active {
+  background: transparent !important;
+  border-bottom-color: rgba(255,255,255,0.055) !important;
+  box-shadow: none !important;
+  border-radius: 0 !important;
+}
+/* Left accent bar for active row */
+.track-card.active::before {
+  content: '' !important;
+  position: absolute !important;
+  left: 0 !important;
+  top: 10% !important;
+  bottom: 10% !important;
+  width: 3px !important;
+  background: var(--grad-main) !important;
+  border-radius: 0 3px 3px 0 !important;
+  opacity: 1 !important;
+  box-shadow: 0 0 10px rgba(182, 110, 255, 0.80) !important;
+}
+.track-card.active:active {
+  background: rgba(182, 110, 255, 0.07) !important;
+  transform: none !important;
+}
+
+/* ── Track number ── */
+.track-card-num {
+  width: 22px !important;
+  flex-shrink: 0 !important;
+  text-align: right !important;
+  font-size: 13px !important;
+  font-weight: 500 !important;
+  color: rgba(235,235,245,0.28) !important;
+  font-variant-numeric: tabular-nums !important;
+  line-height: 1 !important;
+  transition: color 0.18s !important;
+}
+.track-card.active .track-card-num {
+  color: transparent !important; /* hidden behind EQ bars when active */
+}
+
+/* ── Art thumbnail ── */
 .track-card-art {
+  width: 48px !important;
+  height: 48px !important;
+  flex-shrink: 0 !important;
+  border-radius: 10px !important;
   background: linear-gradient(145deg,
-    rgba(38, 8, 70, 0.96) 0%,
-    rgba(10, 2, 22, 0.99) 100%) !important;
-  border: 1px solid rgba(182, 110, 255, 0.22) !important;
-  border-radius: 12px !important;
-  box-shadow: inset 0 1px 0 rgba(255,255,255,0.07) !important;
+    rgba(36, 7, 64, 0.90) 0%,
+    rgba(10, 2, 20, 0.96) 100%) !important;
+  border: 1px solid rgba(182, 110, 255, 0.16) !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  position: relative !important;
+  overflow: hidden !important;
+  transition: border-color 0.20s, box-shadow 0.20s !important;
+  box-shadow: none !important;
 }
 .track-card-art svg {
-  filter: drop-shadow(0 0 8px rgba(182, 110, 255, 0.45)) !important;
+  width: 18px !important;
+  height: 18px !important;
+  color: rgba(182, 110, 255, 0.50) !important;
+  filter: none !important;
+  transition: color 0.18s !important;
 }
 .track-card.active .track-card-art {
-  border-color: rgba(182, 110, 255, 0.55) !important;
-  box-shadow: 0 0 18px rgba(182, 110, 255, 0.30) !important;
+  border-color: rgba(182, 110, 255, 0.45) !important;
+  box-shadow: 0 0 14px rgba(182, 110, 255, 0.30) !important;
+}
+.track-card.active .track-card-art svg { color: var(--purple) !important; }
+
+/* EQ overlay — sits on top of art when active */
+.track-card-eq-overlay {
+  position: absolute !important;
+  inset: 0 !important;
+  display: flex !important;
+  align-items: flex-end !important;
+  justify-content: center !important;
+  gap: 3px !important;
+  padding-bottom: 10px !important;
+  opacity: 0 !important;
+  transition: opacity 0.22s !important;
+}
+.track-card.active .track-card-eq-overlay { opacity: 1 !important; }
+.track-card.active .track-card-art svg    { opacity: 0 !important; }
+
+/* ── Info ── */
+.track-card-info {
+  flex: 1 !important;
+  min-width: 0 !important;
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 2px !important;
+}
+.track-card-name {
+  font-size: 14px !important;
+  font-weight: 600 !important;
+  color: rgba(235,235,245,0.90) !important;
+  white-space: nowrap !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+  letter-spacing: 0.1px !important;
+  transition: color 0.18s !important;
+  line-height: 1.25 !important;
+}
+.track-card.active .track-card-name {
+  color: var(--purple-b) !important;
+}
+.track-card-sub {
+  font-size: 11.5px !important;
+  font-weight: 400 !important;
+  color: rgba(235,235,245,0.35) !important;
+  white-space: nowrap !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+  letter-spacing: 0.05px !important;
+  line-height: 1.2 !important;
 }
 
-/* track name active color */
-.track-card.active .track-card-name { color: var(--purple-b) !important; }
-.track-card.active .track-card-num  { color: var(--purple) !important; }
+/* ── Tag badge ── */
+.track-tag {
+  flex-shrink: 0 !important;
+  height: 18px !important;
+  padding: 0 7px !important;
+  border-radius: 5px !important;
+  font-size: 9px !important;
+  font-weight: 800 !important;
+  letter-spacing: 1px !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  text-transform: uppercase !important;
+}
+
+/* ── Heart ── */
+.track-card-heart {
+  flex-shrink: 0 !important;
+  width: 34px !important;
+  height: 34px !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  background: none !important;
+  border: none !important;
+  cursor: pointer;
+  color: rgba(235,235,245,0.22) !important;
+  border-radius: 10px !important;
+  transition: color 0.18s, transform 0.18s var(--ease-bounce), background 0.14s !important;
+}
+.track-card-heart svg { width: 16px !important; height: 16px !important; }
+.track-card-heart.liked { color: var(--pink) !important; }
+.track-card-heart.liked svg { filter: drop-shadow(0 0 5px rgba(255, 45, 123, 0.80)) !important; }
+.track-card-heart:active { transform: scale(0.78) !important; }
+@media (hover: hover) {
+  .track-card-heart:hover { color: var(--pink) !important; background: rgba(255,45,123,0.08) !important; }
+}
+
+/* ── Right play button ── */
+.track-card-action {
+  flex-shrink: 0 !important;
+  width: 28px !important;
+  height: 28px !important;
+  background: none !important;
+  border: none !important;
+  cursor: pointer;
+  color: rgba(235,235,245,0.20) !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  border-radius: 8px !important;
+  transition: color 0.15s, background 0.14s, transform 0.14s !important;
+}
+.track-card-action svg { width: 14px !important; height: 14px !important; }
+.track-card-action:active { transform: scale(0.84) !important; color: var(--purple) !important; }
+@media (hover: hover) {
+  .track-card-action:hover { color: rgba(235,235,245,0.75) !important; }
+}
+.track-card.active .track-card-action { color: rgba(182, 110, 255, 0.40) !important; }
+
+/* Kill the old shimmer ::after on rows */
+.track-card::after {
+  display: none !important;
+  animation: none !important;
+}
+
+/* Remove gap between row cards & tighten container */
+.track-grid       { gap: 0 !important; }
+.tracks-section   { padding: 0 0 16px !important; }
+
+/* Wrap the list in a subtle card container */
+#song-list {
+  background: rgba(10, 2, 18, 0.60) !important;
+  border-radius: 18px !important;
+  overflow: hidden !important;
+  border: 1px solid rgba(255,255,255,0.06) !important;
+  margin: 0 16px !important;
+}
+
+/* Entrance animation stays but is lighter */
+.track-card { animation: trackRowEntrance 0.38s var(--ease-bounce) both !important; }
+@keyframes trackRowEntrance {
+  from { opacity: 0; transform: translateX(-14px); }
+  to   { opacity: 1; transform: translateX(0); }
+}
 
 /* ─── HOME PREVIEW SONGS ──────────────────────── */
 .home-preview-song {
