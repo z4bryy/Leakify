@@ -16,6 +16,7 @@ let fpoOpen       = false;
 let isSeeking        = false;
 let playHistory      = []; // stack of previously-played indices for proper prev navigation
 let activeTab        = 'home'; // tracks current tab for slide direction
+let homeRowObserver  = null;  // IntersectionObserver for staggered home row reveals
 
 // ══════════════════════════════════════════
 //  SKELETON LOADING (replaces spinner)
@@ -76,7 +77,15 @@ const ARTIST_PHOTOS = {
 };
 
 function loadArtistPhotos() {
-  document.querySelectorAll('.artist-card[data-artist]').forEach(card => {
+  if (!homeRowObserver) setupHomeRowObserver();
+  document.querySelectorAll('.artist-card[data-artist]').forEach((card, idx) => {
+    // ── Stagger reveal via IntersectionObserver ──
+    if (!card.classList.contains('reveal-ready') && !card.classList.contains('revealed')) {
+      card.classList.add('reveal-ready');
+      card.style.setProperty('--reveal-delay', `${idx * 0.07}s`);
+      homeRowObserver && homeRowObserver.observe(card);
+    }
+
     const artist = card.dataset.artist;
     const src    = ARTIST_PHOTOS[artist];
     if (!src) return;
@@ -97,17 +106,29 @@ function loadArtistPhotos() {
   });
 }
 
+// ── Generic debounce helper ──────────────────
+function debounce(fn, ms) {
+  let id;
+  return function(...args) {
+    clearTimeout(id);
+    id = setTimeout(() => fn.apply(this, args), ms);
+  };
+}
+
 // ── Likes (localStorage) ──────────────────
 let likes = new Set(JSON.parse(localStorage.getItem('leakify_likes') || '[]'));
-function saveLikes() { localStorage.setItem('leakify_likes', JSON.stringify([...likes])); }
+const _saveLikesNow = () => { try { localStorage.setItem('leakify_likes', JSON.stringify([...likes])); } catch(_){} };
+const saveLikes = debounce(_saveLikesNow, 400);
 
 // ── Recently Played (localStorage, max 30) ────
 let recentlyPlayed = JSON.parse(localStorage.getItem('leakify_recent') || '[]');
-function saveRecent() { localStorage.setItem('leakify_recent', JSON.stringify(recentlyPlayed.slice(0,30))); }
+const _saveRecentNow = () => { try { localStorage.setItem('leakify_recent', JSON.stringify(recentlyPlayed.slice(0,30))); } catch(_){} };
+const saveRecent = debounce(_saveRecentNow, 600);
 
 // ── Play Counts (localStorage) ────────────────
 let playCounts = JSON.parse(localStorage.getItem('leakify_playcounts') || '{}');
-function savePlayCounts() { localStorage.setItem('leakify_playcounts', JSON.stringify(playCounts)); }
+const _savePlayCountsNow = () => { try { localStorage.setItem('leakify_playcounts', JSON.stringify(playCounts)); } catch(_){} };
+const savePlayCounts = debounce(_savePlayCountsNow, 800);
 function incrementPlayCount(filename) {
   playCounts[filename] = (playCounts[filename] || 0) + 1;
   savePlayCounts();
@@ -176,16 +197,28 @@ function setVolume(vol) {
 // Without this, iOS PWA suspends audio when the screen locks or app backgrounds.
 function updateMediaSession(song) {
   if (!('mediaSession' in navigator)) return;
+
+  // ── Artwork: prefer Supabase cover art, fall back to app icons ──
+  // iOS caches artwork aggressively; include song filename as cache-buster.
+  const artworkKey = encodeURIComponent(song.filename || song.display || '');
   navigator.mediaSession.metadata = new MediaMetadata({
     title:  song.display,
     artist: song.artist,
-    album:  'Leakify · Private Vault',
+    album:  'Leakify \u00b7 Private Vault',
     artwork: [
-      { src: '/static/icon-192.png', sizes: '192x192', type: 'image/png' },
-      { src: '/static/icon-512.png', sizes: '512x512', type: 'image/png' },
+      { src: `/static/icon-192.png?v=${artworkKey}`, sizes: '192x192', type: 'image/png' },
+      { src: `/static/icon-512.png?v=${artworkKey}`, sizes: '512x512', type: 'image/png' },
+      { src: `/static/icon-1024.png?v=${artworkKey}`, sizes: '1024x1024', type: 'image/png' },
     ],
   });
-  // Register hardware control handlers (headphones, lock screen, CarPlay, etc.)
+
+  // ── Playback state ──
+  navigator.mediaSession.playbackState = 'playing';
+
+  // ── Sync initial position to lock-screen scrubber ──
+  _msUpdatePositionState();
+
+  // ── Hardware control handlers ──
   navigator.mediaSession.setActionHandler('play', () => {
     audio.play().then(() => {
       isPlaying = true;
@@ -198,6 +231,7 @@ function updateMediaSession(song) {
       navigator.mediaSession.playbackState = 'playing';
     }).catch(() => {});
   });
+
   navigator.mediaSession.setActionHandler('pause', () => {
     audio.pause();
     isPlaying = false;
@@ -209,10 +243,56 @@ function updateMediaSession(song) {
     setVinylSpin(false);
     navigator.mediaSession.playbackState = 'paused';
   });
+
   navigator.mediaSession.setActionHandler('previoustrack', prevSong);
   navigator.mediaSession.setActionHandler('nexttrack',     nextSong);
-  navigator.mediaSession.playbackState = 'playing';
+
+  // ── Seek — enables lock-screen progress bar scrubbing ──
+  // iOS 15+ honours this handler; without it the scrubber is read-only.
+  try {
+    navigator.mediaSession.setActionHandler('seekto', (details) => {
+      if (!audio.duration) return;
+      const target = details.seekTime ?? 0;
+      audio.currentTime = Math.max(0, Math.min(target, audio.duration));
+      _msUpdatePositionState();
+      // Sync in-app progress bar immediately
+      updateProgress();
+    });
+  } catch (_) {
+    // seekto not supported on this platform (pre-iOS 15) — silently skip
+  }
+
+  // ── Seek-forward / seek-backward (AirPods Pro, CarPlay) ──
+  try {
+    navigator.mediaSession.setActionHandler('seekforward', (details) => {
+      audio.currentTime = Math.min(audio.currentTime + (details.seekOffset ?? 10), audio.duration);
+      _msUpdatePositionState();
+      updateProgress();
+    });
+    navigator.mediaSession.setActionHandler('seekbackward', (details) => {
+      audio.currentTime = Math.max(audio.currentTime - (details.seekOffset ?? 10), 0);
+      _msUpdatePositionState();
+      updateProgress();
+    });
+  } catch (_) { /* not supported */ }
 }
+
+/** Push current playback position & duration to the OS lock screen.
+ *  Called once on song start and throttled-to-1Hz during playback.  */
+function _msUpdatePositionState() {
+  if (!('mediaSession' in navigator)) return;
+  if (!audio.duration || !isFinite(audio.duration)) return;
+  try {
+    navigator.mediaSession.setPositionState({
+      duration:     audio.duration,
+      playbackRate: audio.playbackRate ?? 1,
+      position:     Math.min(audio.currentTime, audio.duration),
+    });
+  } catch (_) { /* setPositionState not available (older Safari) */ }
+}
+
+// Throttle lock-screen scrubber updates to once per second
+let _msPositionTick = 0;
 
 // ── DOM helpers ───────────────────────────────
 const $  = (id) => document.getElementById(id);
@@ -286,6 +366,9 @@ const fpoVolume      = $('fpo-volume'); // range input – replaces custom drag 
 (function particles() {
   const canvas = $('particles-canvas');
   const ctx    = canvas.getContext('2d');
+  // Promote canvas to its own GPU compositing layer so particle repaints
+  // don't trigger main-layer recompositions.
+  canvas.style.transform = 'translateZ(0)';
   let W, H;
   const pts = [];
 
@@ -296,18 +379,27 @@ const fpoVolume      = $('fpo-volume'); // range input – replaces custom drag 
     'rgba(255,159,10,',   // orange
     'rgba(48,209,88,',    // green
   ];
-  const MAX_DIST = 110;
+  const MAX_DIST    = 110;
+  const MAX_DIST_SQ = MAX_DIST * MAX_DIST;
+  // Squared thresholds for 3 alpha buckets (avoids sqrt per pair)
+  // bucket 0: d < 0.30*MAX_DIST → alpha ≈ 0.07–0.10  →  HIGH_SQ = (0.30)² * MAX_DIST_SQ
+  // bucket 1: d < 0.60*MAX_DIST → alpha ≈ 0.04–0.07  →  MID_SQ
+  const HIGH_SQ = MAX_DIST_SQ * 0.09;
+  const MID_SQ  = MAX_DIST_SQ * 0.36;
   // Skip expensive O(n²) connection lines on mobile — not visible on small screens
-  const showLines = window.innerWidth >= 768;
+  const showLines  = window.innerWidth >= 768;
+  // Throttle to 30fps — particles are purely decorative; halves CPU budget
+  const TARGET_MS  = 1000 / 30;
+  let   lastFrameT = 0;
 
   function resize() {
     W = canvas.width  = window.innerWidth;
     H = canvas.height = window.innerHeight;
   }
   resize();
-  window.addEventListener('resize', resize);
+  window.addEventListener('resize', resize, { passive: true });
 
-  const count = window.innerWidth < 480 ? 75 : 130;
+  const count = window.innerWidth < 480 ? 60 : 100;
   for (let i = 0; i < count; i++) {
     pts.push({
       x:    Math.random() * window.innerWidth,
@@ -323,33 +415,54 @@ const fpoVolume      = $('fpo-volume'); // range input – replaces custom drag 
     });
   }
 
-  function draw() {
+  function draw(timestamp) {
+    requestAnimationFrame(draw);
+    // ── Pause when tab/app is hidden (saves CPU/battery) ──
+    if (document.hidden) return;
+    // ── 30fps throttle ──
+    if (timestamp - lastFrameT < TARGET_MS) return;
+    lastFrameT = timestamp;
+
     ctx.clearRect(0, 0, W, H);
 
-    // ── Connection lines (desktop only — O(n²) too costly on mobile) ──
+    // ── Connection lines: O(n²) check with squared-distance (no sqrt),
+    //    batched into 3 alpha buckets — only 3 ctx.stroke() calls per frame
+    //    instead of one per visible pair. ──
     if (showLines) {
+      // Re-use arrays across frames to avoid GC pressure
+      const bHigh = [], bMid = [], bLow = [];
       for (let i = 0; i < pts.length - 1; i++) {
         for (let j = i + 1; j < pts.length; j++) {
           const dx = pts[i].x - pts[j].x;
           const dy = pts[i].y - pts[j].y;
-          const d  = Math.sqrt(dx * dx + dy * dy);
-          if (d < MAX_DIST) {
-            const alpha = (1 - d / MAX_DIST) * 0.10;
-            ctx.beginPath();
-            ctx.moveTo(pts[i].x, pts[i].y);
-            ctx.lineTo(pts[j].x, pts[j].y);
-            ctx.strokeStyle = `rgba(191,90,242,${alpha.toFixed(3)})`;
-            ctx.lineWidth   = 0.6;
-            ctx.stroke();
+          const dSq = dx * dx + dy * dy;
+          if (dSq < MAX_DIST_SQ) {
+            const bucket = dSq < HIGH_SQ ? bHigh : dSq < MID_SQ ? bMid : bLow;
+            bucket.push(pts[i].x, pts[i].y, pts[j].x, pts[j].y);
           }
         }
+      }
+      ctx.lineWidth = 0.6;
+      const buckets = [bHigh, bMid, bLow];
+      const alphas  = [0.090, 0.055, 0.025];
+      for (let bi = 0; bi < 3; bi++) {
+        const lines = buckets[bi];
+        if (!lines.length) continue;
+        ctx.beginPath();
+        for (let k = 0; k < lines.length; k += 4) {
+          ctx.moveTo(lines[k],     lines[k + 1]);
+          ctx.lineTo(lines[k + 2], lines[k + 3]);
+        }
+        ctx.strokeStyle = `rgba(191,90,242,${alphas[bi]})`;
+        ctx.stroke();
       }
     }
 
     // ── Dots & 999 symbols ──
-    pts.forEach(p => {
-      p.x  += p.vx;  p.y  += p.vy;
-      p.a  += p.da;
+    for (let i = 0; i < pts.length; i++) {
+      const p = pts[i];
+      p.x += p.vx;  p.y += p.vy;
+      p.a += p.da;
       if (p.x < 0) p.x = W;  if (p.x > W) p.x = 0;
       if (p.y < 0) p.y = H;  if (p.y > H) p.y = 0;
       if (p.a < 0 || p.a > 1) p.da *= -1;
@@ -369,10 +482,9 @@ const fpoVolume      = $('fpo-volume'); // range input – replaces custom drag 
         ctx.fillStyle = `${p.color}${p.a.toFixed(2)})`;
         ctx.fill();
       }
-    });
-    requestAnimationFrame(draw);
+    }
   }
-  draw();
+  requestAnimationFrame(draw);
 })();
 
 // ══════════════════════════════════════════
@@ -437,7 +549,7 @@ function setupLoginEvents() {
         setTimeout(() => showPlayer(), 300);
       } else {
         loginError.classList.remove('hidden');
-        loginError.textContent = data.error || 'Wrong credentials. Try again.';
+        loginError.textContent = data.error || 'Access denied';
         loginPass.value = '';
         loginPass.focus();
         loginBtn.classList.remove('loading');
@@ -612,6 +724,19 @@ function setupRevealObserver() {
   }, { threshold: 0.1, rootMargin: '0px 0px 40px 0px' });
 }
 
+// Shared IntersectionObserver for home preview rows
+function setupHomeRowObserver() {
+  if (homeRowObserver) return; // singleton
+  homeRowObserver = new IntersectionObserver((entries) => {
+    entries.forEach(entry => {
+      if (entry.isIntersecting) {
+        entry.target.classList.add('revealed');
+        homeRowObserver.unobserve(entry.target);
+      }
+    });
+  }, { threshold: 0.05, rootMargin: '0px 0px 60px 0px' });
+}
+
 function renderSongs() {
   trackCount.textContent = `${filteredSongs.length} song${filteredSongs.length !== 1 ? 's' : ''}`;
 
@@ -762,6 +887,17 @@ function setVinylSpin(playing) {
 }
 
 function onPlayStart(song) {
+  // Track switch cross-fade — art wrapper morphs on every new song
+  const fpoArtWrap  = fpo.querySelector('.fpo-art-wrap');
+  const heroArtWrap = heroArt.closest('.hero-art-wrap') || heroArt.parentElement;
+  [fpoArtWrap, heroArtWrap].forEach(el => {
+    if (!el) return;
+    el.classList.remove('track-switching');
+    void el.offsetWidth; // force reflow
+    el.classList.add('track-switching');
+    el.addEventListener('animationend', () => el.classList.remove('track-switching'), { once: true });
+  });
+
   // Hero
   heroTrackName.textContent  = song.display;
   heroArtistName.textContent = song.artist;
@@ -931,6 +1067,13 @@ function updateProgress() {
   if (npbInlineFill) npbInlineFill.style.width = pctStr;
   fpoElapsed.textContent   = formatTime(audio.currentTime);
   fpoDuration.textContent  = formatTime(audio.duration);
+
+  // Sync lock-screen scrubber once per second (throttled by whole-second boundary)
+  const nowSec = Math.floor(audio.currentTime);
+  if (nowSec !== _msPositionTick) {
+    _msPositionTick = nowSec;
+    _msUpdatePositionState();
+  }
 }
 
 function seekAt(e) {
@@ -951,6 +1094,24 @@ function openFPO() {
   fpoOpen = true;
   fpo.classList.add('open');
   fpo.style.transform = '';
+  // Start visualizer loop now that FPO is visible
+  if (analyserNode) startVisualizer();
+  // Trigger FPO morph entrance — restart animations on each open
+  const fpoOpenEls = [
+    fpo.querySelector('.fpo-art-wrap'),
+    fpo.querySelector('.fpo-meta'),
+    fpo.querySelector('.fpo-progress-wrap'),
+    fpo.querySelector('.fpo-controls'),
+    fpo.querySelector('.fpo-volume-wrap'),
+    fpo.querySelector('.fpo-extra-row'),
+    fpo.querySelector('.fpo-visualizer'),
+  ];
+  fpoOpenEls.forEach(el => {
+    if (!el) return;
+    el.classList.remove('fpo-opening');
+    void el.offsetWidth; // force reflow to restart animation
+    el.classList.add('fpo-opening');
+  });
   // Show only the 'Playing' button as active while FPO is open
   $$('.bnav-btn').forEach(b => b.classList.remove('active'));
   const bp = $('bnav-player');
@@ -958,7 +1119,11 @@ function openFPO() {
 }
 function closeFPO() {
   fpoOpen = false;
+  // Stop the visualizer rAF loop immediately — saves ~60fps of canvas work
+  if (vizAF) { cancelAnimationFrame(vizAF); vizAF = null; }
   fpo.classList.remove('open');
+  // Remove morph entrance classes so they fire fresh on next open
+  fpo.querySelectorAll('.fpo-opening').forEach(el => el.classList.remove('fpo-opening'));
   const bp = $('bnav-player');
   if (bp) bp.classList.remove('active');
   // Re-activate whichever underlying tab is currently visible
@@ -1069,7 +1234,12 @@ function setupAllEvents() {
   }
 
   // Audio events
-  audio.addEventListener('timeupdate', updateProgress);
+  // timeupdate: batch DOM writes via rAF to avoid mid-frame style mutations
+  let _progressRAF = 0;
+  audio.addEventListener('timeupdate', () => {
+    if (_progressRAF) return;
+    _progressRAF = requestAnimationFrame(() => { _progressRAF = 0; updateProgress(); });
+  });
   // Keep mediaSession.playbackState in sync
   audio.addEventListener('play',  () => {
     if ('mediaSession' in navigator) navigator.mediaSession.playbackState = 'playing';
@@ -1140,9 +1310,11 @@ function setupAllEvents() {
       }
     }
   });
+  // Debounce search — wait 150ms after last keystroke before filtering
+  const debouncedApplyFilter = debounce(applyFilter, 150);
   searchInput.addEventListener('input', () => {
     searchClear.classList.toggle('hidden', !searchInput.value);
-    applyFilter();
+    debouncedApplyFilter();
   });
   searchClear.addEventListener('click', () => {
     searchInput.value = '';
@@ -1313,19 +1485,23 @@ function setupBottomNav() {
   const TAB_ORDER = ['home', 'vault', '999', 'player'];
 
   function animateTabTransition(toTab, fromTab) {
-    const allTabs = [tabHome, tabVault, tab999];
     const tabMap  = { home: tabHome, vault: tabVault, '999': tab999 };
     const incoming = tabMap[toTab];
     if (!incoming || !fromTab || fromTab === toTab) return;
     const fromIdx = TAB_ORDER.indexOf(fromTab);
     const toIdx   = TAB_ORDER.indexOf(toTab);
     const goingRight = toIdx > fromIdx;
+    // Force reflow so animation restarts correctly on repeated transitions
     incoming.classList.remove('slide-in-left', 'slide-in-right');
+    void incoming.offsetWidth;
     incoming.classList.add(goingRight ? 'slide-in-right' : 'slide-in-left');
-    // Remove animation class after it's done
     incoming.addEventListener('animationend', () => {
       incoming.classList.remove('slide-in-left', 'slide-in-right');
     }, { once: true });
+    // Stagger reveal home rows when switching to any tab
+    if (!homeRowObserver) setupHomeRowObserver();
+    const rows = incoming.querySelectorAll('.home-preview-song.reveal-ready');
+    rows.forEach(r => homeRowObserver && homeRowObserver.observe(r));
   }
 
   function setTab(tab) {
@@ -1518,10 +1694,11 @@ function renderHomePreviewList(containerId, tag, limit) {
   }
 
   container.innerHTML = '';
+  if (!homeRowObserver) setupHomeRowObserver();
   songs.forEach((song, i) => {
     const row = document.createElement('div');
-    row.className = 'home-preview-song';
-    row.style.animationDelay = `${i * 0.06}s`;
+    row.className = 'home-preview-song reveal-ready';
+    row.style.setProperty('--reveal-delay', `${i * 0.055}s`);
     row.innerHTML = `
       <span class="hps-num">${i + 1}</span>
       <div class="hps-art">
@@ -1547,8 +1724,10 @@ function renderHomePreviewList(containerId, tag, limit) {
       renderSongs(); // keep vault DOM in sync with the new filteredSongs
     });
     container.appendChild(row);
+    homeRowObserver && homeRowObserver.observe(row);
   });
 }
+
 
 /** Render Most Played section on home tab */
 function renderMostPlayedSection() {
@@ -1565,12 +1744,13 @@ function renderMostPlayedSection() {
   section.style.display = '';
 
   container.innerHTML = '';
+  if (!homeRowObserver) setupHomeRowObserver();
   played.forEach((song, i) => {
     const count = playCounts[song.filename] || 0;
     const medal = i === 0 ? '🔥' : i === 1 ? '🥈' : i === 2 ? '🥉' : String(i + 1);
     const row = document.createElement('div');
-    row.className = 'home-preview-song';
-    row.style.animationDelay = `${i * 0.05}s`;
+    row.className = 'home-preview-song reveal-ready';
+    row.style.setProperty('--reveal-delay', `${i * 0.055}s`);
     row.innerHTML = `
       <span class="hps-num" style="font-size:14px">${medal}</span>
       <div class="hps-art">
@@ -1594,53 +1774,7 @@ function renderMostPlayedSection() {
       if (idx >= 0) { playSong(idx); renderSongs(); }
     });
     container.appendChild(row);
-  });
-}
-
-/** Render Most Played section on home tab */
-function renderMostPlayedSection() {
-  const section   = $('home-mostplayed-section');
-  const container = $('home-mostplayed-list');
-  if (!section || !container) return;
-
-  const played = allSongs
-    .filter(s => (playCounts[s.filename] || 0) > 0)
-    .sort((a, b) => (playCounts[b.filename] || 0) - (playCounts[a.filename] || 0))
-    .slice(0, 5);
-
-  if (played.length < 2) { section.style.display = 'none'; return; }
-  section.style.display = '';
-
-  container.innerHTML = '';
-  played.forEach((song, i) => {
-    const count = playCounts[song.filename] || 0;
-    const medal = i === 0 ? '🔥' : i === 1 ? '🥈' : i === 2 ? '🥉' : String(i + 1);
-    const row = document.createElement('div');
-    row.className = 'home-preview-song';
-    row.style.animationDelay = `${i * 0.05}s`;
-    row.innerHTML = `
-      <span class="hps-num" style="font-size:14px">${medal}</span>
-      <div class="hps-art">
-        <svg viewBox="0 0 24 24" fill="none">
-          <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="1.5" opacity="0.4"/>
-          <path d="M10 8l6 4-6 4V8z" fill="currentColor"/>
-        </svg>
-      </div>
-      <div class="hps-info">
-        <div class="hps-name">${escHtml(song.display)}</div>
-        <div class="hps-sub">${escHtml(song.artist)} · <span style="color:var(--purple);font-weight:600">${count} play${count !== 1 ? 's' : ''}</span></div>
-      </div>
-      ${song.tag ? `<span class="track-tag track-tag-${song.tag} hps-tag">${song.tag}</span>` : ''}
-      <button class="hps-play" aria-label="Play">
-        <svg viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>
-      </button>
-    `;
-    row.addEventListener('click', () => {
-      filteredSongs = [...allSongs];
-      const idx = filteredSongs.findIndex(s => s.filename === song.filename);
-      if (idx >= 0) { playSong(idx); renderSongs(); }
-    });
-    container.appendChild(row);
+    homeRowObserver && homeRowObserver.observe(row);
   });
 }
 
@@ -1655,10 +1789,11 @@ function renderLikedSection() {
   section.style.display = '';
 
   container.innerHTML = '';
+  if (!homeRowObserver) setupHomeRowObserver();
   likedSongs.forEach((song, i) => {
     const row = document.createElement('div');
-    row.className = 'home-preview-song';
-    row.style.animationDelay = `${i * 0.05}s`;
+    row.className = 'home-preview-song reveal-ready';
+    row.style.setProperty('--reveal-delay', `${i * 0.055}s`);
     row.innerHTML = `
       <span class="hps-num"><svg viewBox="0 0 24 24" fill="currentColor" width="13" height="13"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.27 2 8.5 2 5.41 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.41 22 8.5c0 3.77-3.4 6.86-8.55 11.53L12 21.35z"/></svg></span>
       <div class="hps-art"><svg viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="1.5" opacity="0.4"/><path d="M10 8l6 4-6 4V8z" fill="currentColor"/></svg></div>
@@ -1675,6 +1810,7 @@ function renderLikedSection() {
       renderSongs();
     });
     container.appendChild(row);
+    homeRowObserver && homeRowObserver.observe(row);
   });
 }
 
@@ -1689,10 +1825,11 @@ function renderRecentSection() {
   section.style.display = '';
 
   container.innerHTML = '';
+  if (!homeRowObserver) setupHomeRowObserver();
   recent.forEach((song, i) => {
     const row = document.createElement('div');
-    row.className = 'home-preview-song';
-    row.style.animationDelay = `${i * 0.05}s`;
+    row.className = 'home-preview-song reveal-ready';
+    row.style.setProperty('--reveal-delay', `${i * 0.055}s`);
     row.innerHTML = `
       <span class="hps-num">${i + 1}</span>
       <div class="hps-art"><svg viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="1.5" opacity="0.4"/><path d="M10 8l6 4-6 4V8z" fill="currentColor"/></svg></div>
@@ -1713,6 +1850,7 @@ function renderRecentSection() {
       }
     });
     container.appendChild(row);
+    homeRowObserver && homeRowObserver.observe(row);
   });
 }
 
@@ -1734,8 +1872,12 @@ function switchToVaultAndFilter(artist, tag) {
   tabVault  && tabVault.classList.remove('hidden');
   if (tabVault && fromTab !== 'vault') {
     tabVault.classList.remove('slide-in-left', 'slide-in-right');
+    void tabVault.offsetWidth;
     tabVault.classList.add('slide-in-right');
     tabVault.addEventListener('animationend', () => tabVault.classList.remove('slide-in-right'), { once: true });
+    // Observe any home rows in vault tab
+    if (!homeRowObserver) setupHomeRowObserver();
+    tabVault.querySelectorAll('.home-preview-song.reveal-ready').forEach(r => homeRowObserver && homeRowObserver.observe(r));
   }
 
   if (artist && artist !== 'all') {
@@ -1850,16 +1992,20 @@ function initAudioVisualizer() {
 
 function startVisualizer() {
   if (vizAF) cancelAnimationFrame(vizAF);
-  drawVisualizer();
+  vizAF = null;
+  // Only start the rAF loop when FPO is actually visible
+  if (fpoOpen && analyserNode) drawVisualizer();
 }
 
 function drawVisualizer() {
-  vizAF = requestAnimationFrame(drawVisualizer);
   const canvas = $('fpo-visualizer');
-  if (!canvas || !analyserNode) return;
-
-  // Only draw when FPO is open — skip for perf
-  if (!fpoOpen) return;
+  // Stop the loop the moment FPO closes — no more wasted frames
+  if (!canvas || !analyserNode || !fpoOpen) {
+    if (vizAF) cancelAnimationFrame(vizAF);
+    vizAF = null;
+    return;
+  }
+  vizAF = requestAnimationFrame(drawVisualizer);
 
   const dpr = window.devicePixelRatio || 1;
   const W   = canvas.offsetWidth;

@@ -10,11 +10,53 @@
   <meta name="mobile-web-app-capable" content="yes" />
   <meta name="theme-color" content="#030005" />
   <meta name="format-detection" content="telephone=no" />
+  <meta name="csrf-token" content="{{ csrf_token }}" />
   <link rel="apple-touch-icon" sizes="180x180" href="/static/icon-192.png" />
   <link rel="apple-touch-icon" sizes="1024x1024" href="/static/icon-1024.png" />
   <link rel="icon" type="image/png" sizes="512x512" href="/static/icon-512.png" />
   <link rel="icon" type="image/png" sizes="192x192" href="/static/icon-192.png" />
-  <link rel="apple-touch-startup-image" href="/static/icon-512.png" />
+  <!--
+    iOS PWA Splash Screens — one <link> per device resolution.
+    Each href hits /splash?w=PX&h=PX which generates the correctly-sized
+    PNG on demand (dark #030005 bg + app icon + LEAKIFY branding).
+    Without exact-size matches Safari falls back to a white flash.
+  -->
+  <!-- iPhone 16 Pro Max (440×956 @3x → 1320×2868) -->
+  <link rel="apple-touch-startup-image"
+        media="(device-width:440px) and (device-height:956px) and (-webkit-device-pixel-ratio:3) and (orientation:portrait)"
+        href="/splash?w=1320&h=2868" />
+  <!-- iPhone 16 Pro (402×874 @3x → 1206×2622) -->
+  <link rel="apple-touch-startup-image"
+        media="(device-width:402px) and (device-height:874px) and (-webkit-device-pixel-ratio:3) and (orientation:portrait)"
+        href="/splash?w=1206&h=2622" />
+  <!-- iPhone 16 Plus / 15 Plus / 15 Pro Max / 14 Plus / 14 Pro Max (430×932 @3x) -->
+  <link rel="apple-touch-startup-image"
+        media="(device-width:430px) and (device-height:932px) and (-webkit-device-pixel-ratio:3) and (orientation:portrait)"
+        href="/splash?w=1290&h=2796" />
+  <!-- iPhone 16 / 15 Pro / 14 Pro (393×852 @3x) -->
+  <link rel="apple-touch-startup-image"
+        media="(device-width:393px) and (device-height:852px) and (-webkit-device-pixel-ratio:3) and (orientation:portrait)"
+        href="/splash?w=1179&h=2556" />
+  <!-- iPhone 15 / 14 / 13 Pro / 13 (390×844 @3x) -->
+  <link rel="apple-touch-startup-image"
+        media="(device-width:390px) and (device-height:844px) and (-webkit-device-pixel-ratio:3) and (orientation:portrait)"
+        href="/splash?w=1170&h=2532" />
+  <!-- iPhone 14 Plus / 13 Pro Max (428×926 @3x) -->
+  <link rel="apple-touch-startup-image"
+        media="(device-width:428px) and (device-height:926px) and (-webkit-device-pixel-ratio:3) and (orientation:portrait)"
+        href="/splash?w=1284&h=2778" />
+  <!-- iPhone 13 mini / 12 mini (375×812 @3x) -->
+  <link rel="apple-touch-startup-image"
+        media="(device-width:375px) and (device-height:812px) and (-webkit-device-pixel-ratio:3) and (orientation:portrait)"
+        href="/splash?w=1125&h=2436" />
+  <!-- iPhone SE 3rd/2nd gen (375×667 @2x) -->
+  <link rel="apple-touch-startup-image"
+        media="(device-width:375px) and (device-height:667px) and (-webkit-device-pixel-ratio:2) and (orientation:portrait)"
+        href="/splash?w=750&h=1334" />
+  <!-- iPhone 8 Plus / 7 Plus (414×736 @3x) -->
+  <link rel="apple-touch-startup-image"
+        media="(device-width:414px) and (device-height:736px) and (-webkit-device-pixel-ratio:3) and (orientation:portrait)"
+        href="/splash?w=1242&h=2208" />
   <link rel="manifest" href="/static/manifest.json" />
   <title>Leakify</title>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
@@ -162,7 +204,8 @@
             </svg>
             <label for="login-user" class="sr-only">Username</label>
             <input type="text" id="login-user" class="lx-input" placeholder="Username"
-              autocomplete="username" spellcheck="false" autocapitalize="none" autocorrect="off" />
+              autocomplete="username" spellcheck="false" autocapitalize="none" autocorrect="off"
+              maxlength="64" />
             <div class="lx-field-line"></div>
           </div>
 
@@ -172,12 +215,13 @@
             </svg>
             <label for="login-pass" class="sr-only">Password</label>
             <input type="password" id="login-pass" class="lx-input" placeholder="Password"
-              autocomplete="current-password" autocapitalize="none" autocorrect="off" />
+              autocomplete="current-password" autocapitalize="none" autocorrect="off"
+              maxlength="128" />
             <div class="lx-field-line"></div>
           </div>
 
         </div>
-        <div id="login-error" class="login-error hidden">⚠ Wrong credentials. Try again.</div>
+        <div id="login-error" class="login-error hidden">⚠ Access denied</div>
         <button type="submit" class="login-btn">
           <span class="login-btn-text">ENTER THE VAULT</span>
           <svg viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>

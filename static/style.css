@@ -22,6 +22,7 @@ button, input, select, textarea {
 }
 
 :root {
+  /* ── Brand Palette ── */
   --bg:           #030005;
   --bg-2:         #0a0012;
   --surface:      rgba(22, 5, 36, 0.80);
@@ -38,21 +39,69 @@ button, input, select, textarea {
   --text-1:       #FFFFFF;
   --text-2:       rgba(235,235,245,0.75);
   --text-3:       rgba(235,235,245,0.40);
+
+  /* ── 999 / Juice WRLD Neon Accent Tokens ── */
+  --neon-purple:  #D97EFF;            /* brighter lock-screen glow  */
+  --neon-pink:    #FF6B8A;            /* melancholic rose accent     */
+  --color-999:    #BF5AF2;            /* 999 brand signature purple  */
+  --glass-strong: rgba(10, 2, 18, 0.88);
+  --glass-mid:    rgba(18, 4, 30, 0.72);
+
+  /* ── Radius ── */
   --radius-sm:    10px;
   --radius-md:    16px;
   --radius-lg:    24px;
   --radius-xl:    32px;
+  --radius-pill:  999px;
+
+  /* ── Easing ── */
   --ease:         cubic-bezier(0.25, 0.46, 0.45, 0.94);
   --ease-spring:  cubic-bezier(0.175, 0.885, 0.32, 1.275);
   --ease-bounce:  cubic-bezier(0.34, 1.56, 0.64, 1);
+  --ease-in:      cubic-bezier(0.55, 0.055, 0.675, 0.19);
+  --ease-out:     cubic-bezier(0.215, 0.61, 0.355, 1);
+
+  /* ── Transition Shorthands ── */
+  --t-fast:   120ms var(--ease);
+  --t-mid:    280ms var(--ease);
+  --t-slow:   500ms var(--ease);
+
+  /* ── Typography Scale ── */
+  --font-2xs:     11px;
+  --font-xs:      12px;
+  --font-sm:      13px;
+  --font-base:    15px;
+  --font-md:      17px;
+  --font-lg:      20px;
+  --font-xl:      24px;
+  --font-2xl:     28px;
+  --font-3xl:     34px;
+  --font-display: 40px;
+  --font-hero:    56px;
+
+  /* ── Shadows ── */
+  --shadow-card:  0 4px 24px rgba(0,0,0,0.50), 0 1px 4px rgba(0,0,0,0.30);
+  --shadow-float: 0 8px 40px rgba(0,0,0,0.75), 0 2px 8px rgba(0,0,0,0.50);
+  --shadow-lift:  0 16px 64px rgba(0,0,0,0.80), 0 4px 16px rgba(0,0,0,0.55);
+
+  /* ── iOS Safe Area Shorthand Tokens ── */
+  /* Use var(--safe-top) instead of repeating env() everywhere */
+  --safe-top:    env(safe-area-inset-top,    0px);
+  --safe-bottom: env(safe-area-inset-bottom, 0px);
+  --safe-left:   env(safe-area-inset-left,   0px);
+  --safe-right:  env(safe-area-inset-right,  0px);
+
+  /* ── Layout Heights ── */
   --npb-h:        62px;
-  --bnav-h:       54px;  /* bottom nav height (excl. safe area) */
+  --bnav-h:       48px;  /* bottom nav height (excl. safe area) */
   --header-h:     48px;
   --pills-h:      44px;
   --sb-h:         52px;
-  /* 2026 design tokens */
+
+  /* ── Glows & Glass ── */
   --glow-purple:  0 0 40px rgba(191,90,242,0.45), 0 0 80px rgba(191,90,242,0.18);
   --glow-pink:    0 0 40px rgba(255,55,95,0.40),  0 0 80px rgba(255,55,95,0.12);
+  --glow-neon:    0 0 24px rgba(217,126,255,0.60), 0 0 60px rgba(191,90,242,0.25);
   --glass-bg:     rgba(12, 2, 22, 0.75);
   --glass-border: rgba(255,255,255,0.09);
 }
@@ -78,6 +127,9 @@ body {
   pointer-events: none;
   z-index: 0;
   opacity: 0.72;
+  /* Own compositing layer so particle canvas redraws don’t invalidate page */
+  will-change: transform;
+  transform: translateZ(0);
 }
 
 /* ─────────────────────────────
@@ -88,14 +140,25 @@ body {
   inset: 0;
   display: none;
   opacity: 0;
-  transition: opacity 0.55s var(--ease);
+  transform: scale(0.97);
+  filter: blur(4px);
+  transition: opacity 0.50s var(--ease),
+              transform 0.52s cubic-bezier(0.175, 0.885, 0.32, 1.18),
+              filter 0.50s var(--ease);
   z-index: 10;
 }
 .screen.active {
   display: flex;
   opacity: 1;
+  transform: scale(1);
+  filter: none;
 }
-.screen.fade-out { opacity: 0; pointer-events: none; }
+.screen.fade-out {
+  opacity: 0;
+  transform: scale(0.95);
+  filter: blur(8px);
+  pointer-events: none;
+}
 
 /* ─────────────────────────────────────────────
    LOGIN SCREEN — 2026 redesign  (lx- prefix)
@@ -593,6 +656,10 @@ body {
   filter: blur(90px);
   animation: aurora 14s ease-in-out infinite alternate;
   z-index: 0;
+  /* Promote aurora blobs to their own compositor layers so their continuous
+     transform animation doesn't trigger main-thread paint. */
+  will-change: transform;
+  transform: translateZ(0);
 }
 .aurora-1 {
   width: 88vw; height: 88vw;
@@ -633,13 +700,13 @@ body {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: max(env(safe-area-inset-top), 8px) 16px 8px;
+  padding: calc(env(safe-area-inset-top, 44px) + 10px) 16px 8px;
   /* iOS frosted glass: semi-transparent dark + strong blur + color saturation */
   background: rgba(3, 0, 8, 0.62);
   backdrop-filter: blur(52px) saturate(180%) brightness(1.06);
   -webkit-backdrop-filter: blur(52px) saturate(180%) brightness(1.06);
   border-bottom: none;
-  height: calc(var(--header-h) + max(env(safe-area-inset-top), 0px));
+  height: calc(var(--header-h) + env(safe-area-inset-top, 44px) + 10px);
   flex-shrink: 0;
   /* Floating shadow below navbar */
   box-shadow:
@@ -1061,11 +1128,13 @@ body {
   cursor: pointer;
   transition: background 0.22s var(--ease), border-color 0.22s, transform 0.15s var(--ease-bounce), box-shadow 0.28s;
   animation: trackEntrance 0.5s var(--ease-bounce) both;
-  backdrop-filter: blur(18px) saturate(180%);
-  -webkit-backdrop-filter: blur(18px) saturate(180%);
+  /* backdrop-filter removed from track cards — it creates a separate GPU layer
+     for every card in the list, exhausting GPU compositor memory on mobile.    */
   position: relative;
   overflow: hidden;
   box-shadow: inset 0 1px 0 rgba(255,255,255,0.05), 0 2px 8px rgba(0,0,0,0.25);
+  /* Contain layout + style so card repaints don't trigger parent/sibling layout */
+  contain: layout style;
 }
 .track-card::after {
   content: '';
@@ -1399,7 +1468,7 @@ body {
   flex-direction: column;
   align-items: center;
   transform: translateY(100%);
-  transition: transform 0.5s var(--ease);
+  transition: transform 0.50s cubic-bezier(0.175, 0.885, 0.32, 1.18);
   overflow: hidden;
 }
 .full-player-overlay.open { transform: translateY(0); }
@@ -1802,10 +1871,7 @@ body {
    OPTIMISATIONS & POLISH  (added Feb 2026)
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
 
-/* ─── Performance: style containment on every card (not layout — it clips shadows) ─── */
-.track-card {
-  contain: style;
-}
+/* contain: layout style already set in main .track-card rule above */
 
 /* ─── Performance: disable expensive per-card shimmer on mobile ─── */
 @media (max-width: 767px) {
@@ -1945,7 +2011,7 @@ body {
 :root {
   --font-display: 'Bebas Neue', 'Impact', sans-serif;
   --font-grunge:  'Permanent Marker', cursive;
-  --bnav-h:        52px;
+  --bnav-h:        46px;
   --neon-1:        #8A2BE2;
   --neon-2:        #BF5AF2;
   --neon-3:        #D97EFF;
@@ -1956,13 +2022,14 @@ body {
    Dynamic Island · ProMotion 120Hz · Corner edges
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
 
-/* ── ProMotion 120Hz: hint browser to keep animations on GPU ── */
+/* ── ProMotion 120Hz: hint browser to keep animations on GPU ──
+   NOTE: Only applied to a small number of truly animated elements.
+   Applying will-change to 100+ track-cards / preview-songs would
+   allocate a separate GPU texture per card — exhausting VRAM on mobile. ── */
 .player-header,
 .bottom-nav,
 .now-playing-bar,
 .full-player-overlay,
-.track-card,
-.home-preview-song,
 .bnav-btn,
 .pill,
 .artist-card {
@@ -3927,11 +3994,11 @@ body {
 
 /* 1. Header: ensure adequate height for Dynamic Island notch region */
 .player-header {
-  /* The dynamic island area can be up to 59pt on iPhone 14 Pro — height is computed dynamically */
-  padding-top: max(env(safe-area-inset-top), 14px);
+  /* Dynamic Island safe area ≈59pt + 10pt buffer keeps content well clear */
+  padding-top: calc(env(safe-area-inset-top, 44px) + 10px);
   padding-bottom: 10px;
   height: auto;
-  min-height: calc(var(--header-h) + max(env(safe-area-inset-top), 0px));
+  min-height: calc(var(--header-h) + env(safe-area-inset-top, 44px) + 10px);
 }
 
 /* 2. Home hero: hide vinyl on narrow screens to give text space */
@@ -4552,40 +4619,40 @@ input, textarea {
   80% { background-position: 40px -40px; }
 }
 
-/* ── Tab slide transitions ── */
+/* ── Tab slide transitions — iOS-style directional spring ── */
 .tab-panel {
   animation: none;
   transition: none;
 }
 .tab-panel.slide-in-right {
-  animation: slideInRight 0.35s var(--ease) both;
+  animation: slideInRight 0.40s cubic-bezier(0.175, 0.885, 0.32, 1.18) both;
 }
 .tab-panel.slide-in-left {
-  animation: slideInLeft 0.35s var(--ease) both;
+  animation: slideInLeft 0.40s cubic-bezier(0.175, 0.885, 0.32, 1.18) both;
 }
 .tab-panel.slide-out-right {
-  animation: slideOutRight 0.28s var(--ease) both;
+  animation: slideOutRight 0.22s cubic-bezier(0.55, 0, 1, 0.45) both;
   pointer-events: none;
 }
 .tab-panel.slide-out-left {
-  animation: slideOutLeft 0.28s var(--ease) both;
+  animation: slideOutLeft 0.22s cubic-bezier(0.55, 0, 1, 0.45) both;
   pointer-events: none;
 }
 @keyframes slideInRight {
-  from { transform: translateX(40px); opacity: 0; }
-  to   { transform: translateX(0);    opacity: 1; }
+  from { transform: translateX(64px) scale(0.96); opacity: 0; filter: blur(5px); }
+  to   { transform: none; opacity: 1; filter: none; }
 }
 @keyframes slideInLeft {
-  from { transform: translateX(-40px); opacity: 0; }
-  to   { transform: translateX(0);     opacity: 1; }
+  from { transform: translateX(-64px) scale(0.96); opacity: 0; filter: blur(5px); }
+  to   { transform: none; opacity: 1; filter: none; }
 }
 @keyframes slideOutRight {
-  from { transform: translateX(0);    opacity: 1; }
-  to   { transform: translateX(40px); opacity: 0; }
+  from { transform: none; opacity: 1; }
+  to   { transform: translateX(64px) scale(0.96); opacity: 0; filter: blur(5px); }
 }
 @keyframes slideOutLeft {
-  from { transform: translateX(0);     opacity: 1; }
-  to   { transform: translateX(-40px); opacity: 0; }
+  from { transform: none; opacity: 1; }
+  to   { transform: translateX(-64px) scale(0.96); opacity: 0; filter: blur(5px); }
 }
 
 /* ── Skeleton loading (replaces spinner) ── */
@@ -7217,8 +7284,9 @@ input, textarea {
   backdrop-filter: blur(52px) saturate(240%) !important;
   -webkit-backdrop-filter: blur(52px) saturate(240%) !important;
   border-bottom: 0.5px solid rgba(255,255,255,0.06) !important;
-  height: 52px !important;
-  padding: 0 14px !important;
+  /* Safe-area-aware: +10px keeps content below Dynamic Island */
+  padding: calc(env(safe-area-inset-top, 44px) + 10px) 14px 8px !important;
+  height: calc(var(--header-h) + env(safe-area-inset-top, 44px) + 10px) !important;
 }
 .header-logo {
   width: 34px !important;
@@ -7367,3 +7435,164 @@ input, textarea {
 .search-bar-inner .s-icon { color: rgba(235,235,245,0.30) !important; }
 
 /* End of Complete Visual Overhaul II */
+
+/* \u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550
+   2026 ANIMATION UPGRADE
+   1. FPO morphing entrance   2. Track switch cross-fade
+   3. Home rows staggered reveal   4. Artist card reveal
+\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550 */
+
+/* \u2500\u2500 FPO: album art morphs in from mini-player scale \u2500\u2500 */
+.fpo-art-wrap.fpo-opening {
+  animation: fpoArtMorphIn 0.54s cubic-bezier(0.175, 0.885, 0.32, 1.28) both;
+}
+@keyframes fpoArtMorphIn {
+  from { transform: scale(0.72) translateY(20px); opacity: 0.3; filter: blur(10px); }
+  62%  { transform: scale(1.04) translateY(-3px); filter: blur(0);   }
+  to   { transform: scale(1)    translateY(0);    opacity: 1;   filter: blur(0); }
+}
+
+/* \u2500\u2500 FPO content: staggered slide-up when overlay opens \u2500\u2500 */
+.fpo-meta.fpo-opening          { animation: fpoContentIn 0.42s cubic-bezier(0.175,0.885,0.32,1.28) 0.14s both; }
+.fpo-progress-wrap.fpo-opening { animation: fpoContentIn 0.42s cubic-bezier(0.175,0.885,0.32,1.28) 0.20s both; }
+.fpo-controls.fpo-opening      { animation: fpoContentIn 0.42s cubic-bezier(0.175,0.885,0.32,1.28) 0.26s both; }
+.fpo-volume-wrap.fpo-opening   { animation: fpoContentIn 0.42s cubic-bezier(0.175,0.885,0.32,1.28) 0.32s both; }
+.fpo-extra-row.fpo-opening     { animation: fpoContentIn 0.42s cubic-bezier(0.175,0.885,0.32,1.28) 0.36s both; }
+.fpo-visualizer.fpo-opening    { animation: fpoContentIn 0.42s cubic-bezier(0.175,0.885,0.32,1.28) 0.18s both; }
+@keyframes fpoContentIn {
+  from { opacity: 0; transform: translateY(22px); }
+  to   { opacity: 1; transform: translateY(0);    }
+}
+
+/* \u2500\u2500 Track switch: art wrapper morphs on new song \u2500\u2500 */
+@keyframes artWrapSwitch {
+  0%   { transform: scale(0.84); filter: brightness(0.35) saturate(0.2); }
+  55%  { transform: scale(1.05); filter: brightness(1.08) saturate(1.1); }
+  100% { transform: scale(1);    filter: none; }
+}
+.fpo-art-wrap.track-switching {
+  animation: artWrapSwitch 0.44s cubic-bezier(0.175, 0.885, 0.32, 1.28) both;
+}
+.hero-art-wrap.track-switching {
+  animation: artWrapSwitch 0.36s cubic-bezier(0.175, 0.885, 0.32, 1.28) both;
+}
+
+/* \u2500\u2500 Home preview rows: staggered IntersectionObserver reveal \u2500\u2500 */
+.home-preview-song.reveal-ready {
+  animation: none !important;
+  opacity: 0;
+  transform: translateY(14px) scale(0.97);
+  transition: opacity 0.36s var(--ease), transform 0.38s var(--ease-spring);
+  transition-delay: var(--reveal-delay, 0s);
+}
+.home-preview-song.revealed {
+  opacity: 1;
+  transform: translateY(0) scale(1);
+}
+
+/* \u2500\u2500 Artist cards: staggered reveal \u2500\u2500 */
+.artist-card.reveal-ready {
+  animation: none;
+  opacity: 0;
+  transform: translateY(18px) scale(0.94);
+  transition: opacity 0.40s var(--ease), transform 0.42s var(--ease-spring);
+  transition-delay: var(--reveal-delay, 0s);
+}
+.artist-card.revealed {
+  opacity: 1;
+  transform: translateY(0) scale(1);
+}
+
+/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+   PERFORMANCE OPTIMIZATIONS — Feb 2026
+   Reduce GPU / compositor memory usage on mobile devices
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+
+/* ── Halve backdrop-filter blur on mobile (≤767px) to significantly
+      reduce GPU compositor cost.  Visual difference is imperceptible
+      through small phone screens. ── */
+@media (max-width: 767px) {
+  .player-header,
+  .player-header.scrolled {
+    backdrop-filter: blur(28px) saturate(150%);
+    -webkit-backdrop-filter: blur(28px) saturate(150%);
+  }
+  .now-playing-bar {
+    backdrop-filter: blur(24px) saturate(180%);
+    -webkit-backdrop-filter: blur(24px) saturate(180%);
+  }
+  .fpo-bg {
+    backdrop-filter: blur(32px) saturate(180%);
+    -webkit-backdrop-filter: blur(32px) saturate(180%);
+  }
+  .pills-wrap,
+  .search-bar-wrap {
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+  }
+  /* Aurora blobs: reduce blur and simplify animation on small screens */
+  .aurora-layer {
+    filter: blur(60px);
+  }
+  /* Login card — only one instance, but still reduce cost for older phones */
+  .lx-card {
+    backdrop-filter: blur(30px) saturate(160%);
+    -webkit-backdrop-filter: blur(30px) saturate(160%);
+  }
+}
+
+/* ── prefers-reduced-motion: disable / simplify all heavy animations for
+      users who request reduced motion (accessibility + performance win) ── */
+@media (prefers-reduced-motion: reduce) {
+  /* Kill all infinite decorative animations */
+  .aurora-layer,
+  .lx-b1, .lx-b2, .lx-b3,
+  .sl-blob-1, .sl-blob-2, .sl-blob-3,
+  .hero-art-vinyl,
+  .fpo-vinyl,
+  .npb-art-spin,
+  .hero-glow,
+  .fpo-art-glow,
+  .lx-disc,
+  .lx-disc-center,
+  .lx-or1, .lx-or2,
+  .lx-disc-glow,
+  .headerLogoPulse,
+  .hero-eq span,
+  .track-card-eq-overlay span,
+  .npb-play::after,
+  .fpo-play-big::after,
+  .track-card::after,
+  .lx-card::before {
+    animation: none !important;
+    transition: none !important;
+  }
+  /* Keep only functional transitions */
+  .track-card,
+  .pill,
+  .bnav-btn,
+  .full-player-overlay,
+  .now-playing-bar {
+    transition: opacity 0.15s, transform 0.15s !important;
+  }
+  /* Disable canvas particle animations */
+  #particles-canvas { display: none; }
+}
+
+/* ── Compositing hints for elements that animate every frame ── */
+.now-playing-bar,
+.full-player-overlay,
+.fpo-bg {
+  will-change: transform;
+}
+.fpo-progress-fill,
+.npb-inline-fill {
+  will-change: width;
+}
+.fpo-progress-thumb {
+  will-change: left;
+}
+/* Visualizer canvas gets its own layer */
+#fpo-visualizer {
+  will-change: contents;
+}

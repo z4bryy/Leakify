@@ -1,4 +1,4 @@
-from flask import Flask, jsonify, send_from_directory, render_template, request, redirect, session
+from flask import Flask, jsonify, send_from_directory, render_template, request, redirect, session, make_response
 from urllib.parse import quote as urlquote
 from urllib.request import urlopen, Request
 from urllib.error import URLError
@@ -7,6 +7,7 @@ from functools import wraps
 from datetime import timedelta
 import json
 import os
+import io
 import hmac
 import secrets
 import time
@@ -261,7 +262,7 @@ def login():
                         'locked': True, 'remaining': _LOCKOUT_SECONDS}), 429
 
     attempts_left = _MAX_ATTEMPTS - rec['count']
-    return jsonify({'ok': False, 'error': 'Wrong credentials.', 'attemptsLeft': attempts_left}), 401
+    return jsonify({'ok': False, 'error': 'Access denied', 'attemptsLeft': attempts_left}), 401
 
 
 @app.route('/api/debug')
@@ -493,6 +494,117 @@ def serve_video(filename):
         github_url = f"https://raw.githubusercontent.com/z4bryy/Leakify/main/static/videos/{filename}"
         return redirect(github_url, code=302)
     return send_from_directory(VIDEO_FOLDER, filename, conditional=True)
+
+# ── iOS PWA Splash Screen Generator ───────────────────────────────
+# iOS requires a splash image whose pixel dimensions EXACTLY match the
+# device screen (logical-px × DPR). We generate each size on-demand
+# with Pillow and cache the PNG bytes in memory for subsequent hits.
+_splash_cache: dict = {}
+
+@app.route('/splash')
+def splash_image():
+    """Return a dark-branded PNG splash for any iPhone viewport.
+
+    Query params: w=<physical-px-width>  h=<physical-px-height>
+    Example: /splash?w=1290&h=2796  →  iPhone 15 Pro Max
+    """
+    try:
+        w = max(320, min(int(request.args.get('w', 1290)), 2732))
+        h = max(480, min(int(request.args.get('h', 2796)), 5464))
+    except (ValueError, TypeError):
+        return send_from_directory('static', 'icon-1024.png')
+
+    if (w, h) in _splash_cache:
+        resp = make_response(_splash_cache[(w, h)])
+        resp.headers['Content-Type']  = 'image/png'
+        resp.headers['Cache-Control'] = 'public, max-age=604800'
+        return resp
+
+    try:
+        from PIL import Image, ImageDraw, ImageFont
+
+        img     = Image.new('RGB', (w, h), (3, 0, 5))   # #030005
+        cx, cy  = w // 2, h // 2
+
+        # Layered purple glow at center
+        for radius, alpha in [(380, 22), (240, 16), (120, 10)]:
+            overlay = Image.new('RGBA', (w, h), (0, 0, 0, 0))
+            od = ImageDraw.Draw(overlay)
+            od.ellipse(
+                [cx - radius, cy - int(radius * 1.35),
+                 cx + radius, cy + int(radius * 1.35)],
+                fill=(191, 90, 242, alpha)
+            )
+            img = Image.alpha_composite(img.convert('RGBA'), overlay).convert('RGB')
+
+        draw = ImageDraw.Draw(img)
+
+        # Center app icon
+        icon_path = os.path.join(os.path.dirname(__file__), 'static', 'icon-512.png')
+        if os.path.exists(icon_path):
+            icon      = Image.open(icon_path).convert('RGBA')
+            icon_size = int(min(w, h) * 0.19)
+            icon      = icon.resize((icon_size, icon_size), Image.LANCZOS)
+            img.paste(icon,
+                      (cx - icon_size // 2,
+                       cy - icon_size // 2 - int(h * 0.055)), icon)
+
+        # "LEAKIFY" wordmark
+        font_size = max(28, int(w * 0.063))
+        font      = ImageFont.load_default()
+        for candidate in [
+            '/System/Library/Fonts/Helvetica.ttc',
+            '/System/Library/Fonts/SFNSDisplay.ttf',
+            '/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf',
+        ]:
+            if os.path.exists(candidate):
+                try:
+                    font = ImageFont.truetype(candidate, font_size)
+                    break
+                except Exception:
+                    pass
+
+        bbox = draw.textbbox((0, 0), 'LEAKIFY', font=font)
+        tw   = bbox[2] - bbox[0]
+        th   = bbox[3] - bbox[1]
+        ty   = cy + int(h * 0.068)
+        # Purple ghost → sharp white on top
+        draw.text((cx - tw // 2,     ty),     'LEAKIFY', fill=(191, 90, 242), font=font)
+        draw.text((cx - tw // 2 - 1, ty - 1), 'LEAKIFY', fill=(255, 255, 255), font=font)
+
+        # Subtitle "999 · Private Vault"
+        sub_size = max(12, int(font_size * 0.40))
+        sub_font = ImageFont.load_default()
+        for candidate in [
+            '/System/Library/Fonts/Helvetica.ttc',
+            '/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf',
+        ]:
+            if os.path.exists(candidate):
+                try:
+                    sub_font = ImageFont.truetype(candidate, sub_size)
+                    break
+                except Exception:
+                    pass
+
+        sub  = '999 \u00b7 Private Vault'
+        sb   = draw.textbbox((0, 0), sub, font=sub_font)
+        draw.text((cx - (sb[2] - sb[0]) // 2, ty + th + int(h * 0.016)),
+                  sub, fill=(191, 90, 242), font=sub_font)
+
+        buf = io.BytesIO()
+        img.save(buf, format='PNG', optimize=True)
+        png_bytes              = buf.getvalue()
+        _splash_cache[(w, h)]  = png_bytes
+
+        resp = make_response(png_bytes)
+        resp.headers['Content-Type']  = 'image/png'
+        resp.headers['Cache-Control'] = 'public, max-age=604800'
+        return resp
+
+    except Exception:
+        # Pillow unavailable or rendering error → fall back to app icon
+        return send_from_directory('static', 'icon-1024.png')
+
 
 if __name__ == '__main__':
     app.run(debug=True, host='0.0.0.0', port=5000)
