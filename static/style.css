@@ -1910,9 +1910,65 @@ body {
   --neon-3:        #D97EFF;
 }
 
-/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-   SPLASH LOADER — 2026 redesign
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+   iPHONE 14 PRO+ OPTIMIZATIONS
+   Dynamic Island · ProMotion 120Hz · Corner edges
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+
+/* ── ProMotion 120Hz: hint browser to keep animations on GPU ── */
+.player-header,
+.bottom-nav,
+.now-playing-bar,
+.full-player-overlay,
+.track-card,
+.home-preview-song,
+.bnav-btn,
+.pill,
+.artist-card {
+  will-change: transform;
+}
+
+/* ── Scroll momentum tuning for 120Hz ── */
+.player-content,
+.fpo-content,
+.pills-inner,
+#tab-home,
+#tab-vault,
+#tab-999 {
+  -webkit-overflow-scrolling: touch;
+  scroll-behavior: smooth;
+}
+
+/* ── Dynamic Island: extra top breathing room ── */
+@supports (padding-top: env(safe-area-inset-top)) {
+  .player-header {
+    padding-top: max(env(safe-area-inset-top), 14px);
+  }
+}
+
+/* ── Home indicator: extra bottom breathing room ── */
+@supports (padding-bottom: env(safe-area-inset-bottom)) {
+  .bottom-nav {
+    padding-bottom: max(env(safe-area-inset-bottom), 8px);
+  }
+}
+
+/* ── iPhone 14 Pro corner radius: keep content inside curved area ── */
+@media (max-width: 430px) {
+  .player-header { padding-left: 20px; padding-right: 20px; }
+  .now-playing-bar { left: 16px; right: 16px; border-radius: 20px; }
+  .home-hero { border-radius: 0; }
+  .track-card,
+  .artist-card {
+    border-radius: 14px;
+  }
+}
+
+/* ── Tap highlight speed: instant on ProMotion ── */
+* { -webkit-tap-highlight-color: transparent; }
+.bnav-btn, .icon-btn, .pill, .track-card, .track-card-heart, .hps-play {
+  transition-duration: 0.12s;
+}
 #screen-loader {
   flex-direction: column;
   align-items: center;

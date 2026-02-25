@@ -104,6 +104,14 @@ function saveLikes() { localStorage.setItem('leakify_likes', JSON.stringify([...
 // ── Recently Played (localStorage, max 30) ────
 let recentlyPlayed = JSON.parse(localStorage.getItem('leakify_recent') || '[]');
 function saveRecent() { localStorage.setItem('leakify_recent', JSON.stringify(recentlyPlayed.slice(0,30))); }
+
+// ── Play Counts (localStorage) ────────────────
+let playCounts = JSON.parse(localStorage.getItem('leakify_playcounts') || '{}');
+function savePlayCounts() { localStorage.setItem('leakify_playcounts', JSON.stringify(playCounts)); }
+function incrementPlayCount(filename) {
+  playCounts[filename] = (playCounts[filename] || 0) + 1;
+  savePlayCounts();
+}
 function addToRecent(song) {
   recentlyPlayed = recentlyPlayed.filter(r => r.filename !== song.filename);
   recentlyPlayed.unshift({ display: song.display, artist: song.artist, filename: song.filename, tag: song.tag || '', url: song.url || '' });
@@ -783,10 +791,14 @@ function onPlayStart(song) {
   // Sync FPO like button
   syncFpoLikeBtn(song.filename);
 
-  // Update recently played section on home if visible
+  // Track play count
+  incrementPlayCount(song.filename);
+
+  // Update recently played + most played section on home if visible
   const homeTab = $('tab-home');
   if (homeTab && !homeTab.classList.contains('hidden')) {
     renderRecentSection();
+    renderMostPlayedSection();
   }
 
   updatePlayButtons(true);
@@ -1476,6 +1488,9 @@ function renderHomeTab() {
     };
   }
 
+  // ── Most Played section ──
+  renderMostPlayedSection();
+
   // ── Recently played section ──
   renderRecentSection();
   const clearRecentBtn = $('home-clear-recent');
@@ -1526,6 +1541,100 @@ function renderHomePreviewList(containerId, tag, limit) {
       const idx = filteredSongs.findIndex(s => s.filename === song.filename);
       playSong(idx >= 0 ? idx : 0);
       renderSongs(); // keep vault DOM in sync with the new filteredSongs
+    });
+    container.appendChild(row);
+  });
+}
+
+/** Render Most Played section on home tab */
+function renderMostPlayedSection() {
+  const section   = $('home-mostplayed-section');
+  const container = $('home-mostplayed-list');
+  if (!section || !container) return;
+
+  const played = allSongs
+    .filter(s => (playCounts[s.filename] || 0) > 0)
+    .sort((a, b) => (playCounts[b.filename] || 0) - (playCounts[a.filename] || 0))
+    .slice(0, 5);
+
+  if (played.length < 2) { section.style.display = 'none'; return; }
+  section.style.display = '';
+
+  container.innerHTML = '';
+  played.forEach((song, i) => {
+    const count = playCounts[song.filename] || 0;
+    const medal = i === 0 ? '🔥' : i === 1 ? '🥈' : i === 2 ? '🥉' : String(i + 1);
+    const row = document.createElement('div');
+    row.className = 'home-preview-song';
+    row.style.animationDelay = `${i * 0.05}s`;
+    row.innerHTML = `
+      <span class="hps-num" style="font-size:14px">${medal}</span>
+      <div class="hps-art">
+        <svg viewBox="0 0 24 24" fill="none">
+          <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="1.5" opacity="0.4"/>
+          <path d="M10 8l6 4-6 4V8z" fill="currentColor"/>
+        </svg>
+      </div>
+      <div class="hps-info">
+        <div class="hps-name">${escHtml(song.display)}</div>
+        <div class="hps-sub">${escHtml(song.artist)} · <span style="color:var(--purple);font-weight:600">${count} play${count !== 1 ? 's' : ''}</span></div>
+      </div>
+      ${song.tag ? `<span class="track-tag track-tag-${song.tag} hps-tag">${song.tag}</span>` : ''}
+      <button class="hps-play" aria-label="Play">
+        <svg viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>
+      </button>
+    `;
+    row.addEventListener('click', () => {
+      filteredSongs = [...allSongs];
+      const idx = filteredSongs.findIndex(s => s.filename === song.filename);
+      if (idx >= 0) { playSong(idx); renderSongs(); }
+    });
+    container.appendChild(row);
+  });
+}
+
+/** Render Most Played section on home tab */
+function renderMostPlayedSection() {
+  const section   = $('home-mostplayed-section');
+  const container = $('home-mostplayed-list');
+  if (!section || !container) return;
+
+  const played = allSongs
+    .filter(s => (playCounts[s.filename] || 0) > 0)
+    .sort((a, b) => (playCounts[b.filename] || 0) - (playCounts[a.filename] || 0))
+    .slice(0, 5);
+
+  if (played.length < 2) { section.style.display = 'none'; return; }
+  section.style.display = '';
+
+  container.innerHTML = '';
+  played.forEach((song, i) => {
+    const count = playCounts[song.filename] || 0;
+    const medal = i === 0 ? '🔥' : i === 1 ? '🥈' : i === 2 ? '🥉' : String(i + 1);
+    const row = document.createElement('div');
+    row.className = 'home-preview-song';
+    row.style.animationDelay = `${i * 0.05}s`;
+    row.innerHTML = `
+      <span class="hps-num" style="font-size:14px">${medal}</span>
+      <div class="hps-art">
+        <svg viewBox="0 0 24 24" fill="none">
+          <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="1.5" opacity="0.4"/>
+          <path d="M10 8l6 4-6 4V8z" fill="currentColor"/>
+        </svg>
+      </div>
+      <div class="hps-info">
+        <div class="hps-name">${escHtml(song.display)}</div>
+        <div class="hps-sub">${escHtml(song.artist)} · <span style="color:var(--purple);font-weight:600">${count} play${count !== 1 ? 's' : ''}</span></div>
+      </div>
+      ${song.tag ? `<span class="track-tag track-tag-${song.tag} hps-tag">${song.tag}</span>` : ''}
+      <button class="hps-play" aria-label="Play">
+        <svg viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>
+      </button>
+    `;
+    row.addEventListener('click', () => {
+      filteredSongs = [...allSongs];
+      const idx = filteredSongs.findIndex(s => s.filename === song.filename);
+      if (idx >= 0) { playSong(idx); renderSongs(); }
     });
     container.appendChild(row);
   });
