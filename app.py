@@ -217,7 +217,7 @@ generate_icons()
 
 @app.route('/api/login', methods=['POST'])
 def login():
-    """Server-side credential check with CSRF validation and IP brute-force protection."""
+    """Server-side credential check with IP brute-force protection."""
     ip  = request.headers.get('X-Forwarded-For', request.remote_addr or 'unknown').split(',')[0].strip()
     now = time.time()
     rec = _LOGIN_ATTEMPTS[ip]
@@ -232,13 +232,6 @@ def login():
     if now - rec['window_start'] > _ATTEMPT_WINDOW:
         rec['count'] = 0
         rec['window_start'] = now
-
-    # ── CSRF check ──
-    submitted_token = request.headers.get('X-CSRF-Token', '')
-    expected_token  = session.get('csrf_token', '')
-    if not expected_token or not submitted_token or \
-            not hmac.compare_digest(submitted_token, expected_token):
-        return jsonify({'ok': False, 'error': 'Invalid request.'}), 403
 
     # ── Credential check ──
     expected_user = os.environ.get('LOGIN_USER', '')
