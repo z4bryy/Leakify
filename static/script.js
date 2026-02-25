@@ -423,9 +423,10 @@ function setupLoginEvents() {
     loginBtn.classList.add('loading');
     loginError.classList.add('hidden');
     try {
+      const csrfToken = document.querySelector('meta[name="csrf-token"]')?.content || '';
       const res = await fetch('/api/login', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': csrfToken },
         body: JSON.stringify({ user: u, pass: p }),
       });
       const data = await res.json();
@@ -436,7 +437,7 @@ function setupLoginEvents() {
         setTimeout(() => showPlayer(), 300);
       } else {
         loginError.classList.remove('hidden');
-        loginError.textContent = 'Wrong credentials. Try again.';
+        loginError.textContent = data.error || 'Wrong credentials. Try again.';
         loginPass.value = '';
         loginPass.focus();
         loginBtn.classList.remove('loading');
