@@ -14,7 +14,6 @@ let shuffle       = false;
 let repeat        = false;
 let fpoOpen       = false;
 let isSeeking        = false;
-let isVolumeSeeking  = false;
 let playHistory      = []; // stack of previously-played indices for proper prev navigation
 let activeTab        = 'home'; // tracks current tab for slide direction
 
@@ -134,19 +133,13 @@ function showUpdateToast(msg, isError) {
   if (isError) el._timer = setTimeout(() => el.classList.add('hidden'), 3000);
 }
 
-// ── Volume slider gradient helper (npb-volume range input) ──
-function syncVolumeSliderBg(slider) {
-  const pct = slider ? slider.value : 80;
-  if (slider) slider.style.background = `linear-gradient(to right, var(--purple) ${pct}%, rgba(255,255,255,0.15) ${pct}%)`;
-}
-
-// ── Sync custom FPO volume bar fill + thumb to current audio.volume ──
-function updateVolumeFill() {
-  const pct = (audio ? audio.volume : 0.8) * 100;
-  const fvf = document.getElementById('fpo-vol-fill');
-  const fvt = document.getElementById('fpo-vol-thumb');
-  if (fvf) fvf.style.width = pct + '%';
-  if (fvt) fvt.style.left  = pct + '%';
+// ── Sync FPO volume range input gradient to current audio.volume ──
+function syncVolume(vol) {
+  const pct = Math.round(vol * 100);
+  const slider = document.getElementById('fpo-volume');
+  if (!slider) return;
+  slider.value = pct;
+  slider.style.background = `linear-gradient(to right, var(--purple) ${pct}%, rgba(255,255,255,0.12) ${pct}%)`;
 }
 
 // ── Media Session API — iOS Lock Screen / Control Center / AirPods ──
@@ -249,18 +242,13 @@ const fpoFill        = $('fpo-progress-fill');
 const fpoThumb       = $('fpo-progress-thumb');
 const fpoElapsed     = $('fpo-elapsed');
 const fpoDuration    = $('fpo-duration');
-const npbProgressStripFill = $('npb-progress-strip-fill');
+const npbInlineFill      = $('npb-inline-fill');
 const fpoPlayBtn     = $('fpo-play-btn');
 const fpoPrevBtn     = $('fpo-prev-btn');
 const fpoNextBtn     = $('fpo-next-btn');
 const fpoShuffleBtn  = $('fpo-shuffle-btn');
 const fpoRepeatBtn   = $('fpo-repeat-btn');
-const fpoVolBar    = $('fpo-vol-bar');   // custom volume bar in FPO
-const fpoVolFill   = $('fpo-vol-fill');
-const fpoVolThumb  = $('fpo-vol-thumb');
-const npbShuffleBtn  = $('npb-shuffle-btn');
-const npbRepeatBtn   = $('npb-repeat-btn');
-const npbVolume      = $('npb-volume');
+const fpoVolume      = $('fpo-volume'); // range input – replaces custom drag bar
 
 // ══════════════════════════════════════════
 //  PARTICLES  (upgraded: connections + 999 symbols + more density)
@@ -375,9 +363,7 @@ if ('serviceWorker' in navigator) {
 window.addEventListener('DOMContentLoaded', () => {
   setupAllEvents();
   audio.volume = 0.8;
-  npbVolume.value = 80;
-  syncVolumeSliderBg(npbVolume);
-  updateVolumeFill();
+  syncVolume(0.8);
   // Boot: animate CSS 999 loader → show login
   startLoaderScreen();
 });
@@ -874,7 +860,7 @@ function updateProgress() {
   const pctStr = pct + '%';
   fpoFill.style.width  = pctStr;
   fpoThumb.style.left  = pctStr;
-  if (npbProgressStripFill) npbProgressStripFill.style.width = pctStr;
+  if (npbInlineFill) npbInlineFill.style.width = pctStr;
   fpoElapsed.textContent   = formatTime(audio.currentTime);
   fpoDuration.textContent  = formatTime(audio.duration);
 }
@@ -888,16 +874,6 @@ function seekAt(e) {
     fpoFill.style.width = (pct * 100) + '%';
     fpoThumb.style.left = (pct * 100) + '%';
   }
-}
-
-function volumeAt(e) {
-  const rect = fpoVolBar.getBoundingClientRect();
-  const clientX = (e.touches ? e.touches[0].clientX : e.clientX);
-  const pct = Math.max(0, Math.min(1, (clientX - rect.left) / rect.width));
-  audio.volume = pct;
-  updateVolumeFill();
-  npbVolume.value = Math.round(pct * 100);
-  syncVolumeSliderBg(npbVolume);
 }
 
 // ══════════════════════════════════════════
@@ -937,9 +913,8 @@ function closeFPO() {
   let startY = 0, startX = 0, dragging = false, startTime = 0;
 
   fpo.addEventListener('touchstart', e => {
-    // Don't initiate drag when touching any input or the volume bar
+    // Don't initiate drag when touching an input (range slider, etc.)
     if (e.target.tagName === 'INPUT') return;
-    if (e.target.closest('.fpo-volume-wrap') || e.target.closest('#fpo-vol-bar')) return;
     // Only initiate from the handle area or top 80px of overlay (not content scroll)
     const touch = e.touches[0];
     startY = touch.clientY;
@@ -1003,53 +978,29 @@ function setupAllEvents() {
   function toggleShuffle() {
     shuffle = !shuffle;
     fpoShuffleBtn.classList.toggle('active', shuffle);
-    npbShuffleBtn.classList.toggle('active', shuffle);
   }
   function toggleRepeat() {
     repeat = !repeat;
     fpoRepeatBtn.classList.toggle('active', repeat);
-    npbRepeatBtn.classList.toggle('active', repeat);
   }
   fpoShuffleBtn.addEventListener('click', toggleShuffle);
   fpoRepeatBtn.addEventListener('click',  toggleRepeat);
-  npbShuffleBtn.addEventListener('click', (e) => { e.stopPropagation(); toggleShuffle(); });
-  npbRepeatBtn.addEventListener('click',  (e) => { e.stopPropagation(); toggleRepeat(); });
 
-  // Open FPO by tapping only the top row of the mini bar
-  nowPlayingBar.querySelector('.npb-row-main').addEventListener('click', openFPO);
+  // Open FPO by tapping anywhere on mini bar except control buttons
+  nowPlayingBar.querySelector('.npb-info').addEventListener('click', openFPO);
+  nowPlayingBar.querySelector('.npb-art').addEventListener('click', openFPO);
   fpoClose.addEventListener('click', closeFPO);
 
-  // Volume — custom FPO bar (drag) + mini bar (range) stay in sync
-  fpoVolBar.addEventListener('mousedown', (e) => {
-    isVolumeSeeking = true;
-    fpoVolBar.classList.add('seeking');
-    volumeAt(e);
-  });
-  fpoVolBar.addEventListener('touchstart', (e) => {
-    isVolumeSeeking = true;
-    fpoVolBar.classList.add('seeking');
-    volumeAt(e);
-    e.stopPropagation(); // prevent FPO swipe-down from stealing the gesture
-    e.preventDefault();  // prevent iOS scroll from overriding horizontal drag
-  }, { passive: false }); // non-passive required for preventDefault on iOS
-  window.addEventListener('mousemove', (e) => { if (isVolumeSeeking) volumeAt(e); });
-  window.addEventListener('touchmove', (e) => {
-    if (isVolumeSeeking) {
-      volumeAt(e);
-      e.preventDefault(); // block iOS scroll while dragging volume
-    }
-  }, { passive: false });
-  window.addEventListener('mouseup', () => {
-    if (isVolumeSeeking) { isVolumeSeeking = false; fpoVolBar.classList.remove('seeking'); }
-  });
-  window.addEventListener('touchend', () => {
-    if (isVolumeSeeking) { isVolumeSeeking = false; fpoVolBar.classList.remove('seeking'); }
-  });
-  npbVolume.addEventListener('input', () => {
-    audio.volume = npbVolume.value / 100;
-    updateVolumeFill();
-    syncVolumeSliderBg(npbVolume);
-  });
+  // Volume — single range input in FPO (reliable on all platforms including iOS)
+  if (fpoVolume) {
+    fpoVolume.addEventListener('input', () => {
+      const vol = fpoVolume.value / 100;
+      audio.volume = vol;
+      syncVolume(vol);
+    });
+    // Prevent the FPO swipe-down gesture from stealing touch on the range slider
+    fpoVolume.addEventListener('touchstart', (e) => e.stopPropagation(), { passive: true });
+  }
 
   // Audio events
   audio.addEventListener('timeupdate', updateProgress);
@@ -1169,8 +1120,8 @@ function setupAllEvents() {
     // M = mute/unmute
     if (e.code === 'KeyM') {
       audio.muted = !audio.muted;
-      if (fpoVolBar) fpoVolBar.style.opacity  = audio.muted ? '0.4' : '1';
-      if (npbVolume) npbVolume.style.opacity  = audio.muted ? '0.4' : '1';
+      const opacity = audio.muted ? '0.4' : '1';
+      if (fpoVolume) fpoVolume.style.opacity = opacity;
     }
   });
 
@@ -1239,15 +1190,13 @@ function setupAllEvents() {
       e.preventDefault();
       const v = Math.min(100, Math.round(audio.volume * 100) + 5);
       audio.volume = v / 100;
-      updateVolumeFill();
-      if (npbVolume) { npbVolume.value = v; syncVolumeSliderBg(npbVolume); }
+      syncVolume(v / 100);
     }
     if (e.code === 'ArrowDown') {
       e.preventDefault();
       const v = Math.max(0, Math.round(audio.volume * 100) - 5);
       audio.volume = v / 100;
-      updateVolumeFill();
-      if (npbVolume) { npbVolume.value = v; syncVolumeSliderBg(npbVolume); }
+      syncVolume(v / 100);
     }
   });
 }
@@ -1442,9 +1391,7 @@ function renderHomeTab() {
         filteredSongs = [...allSongs];
         shuffle = true;
         const fpoShuffleBtn = $('fpo-shuffle-btn');
-        const npbShuffleBtn = $('npb-shuffle-btn');
         if (fpoShuffleBtn) fpoShuffleBtn.classList.add('active');
-        if (npbShuffleBtn) npbShuffleBtn.classList.add('active');
         const idx = Math.floor(Math.random() * allSongs.length);
         playSong(idx);
         switchToVaultAndFilter('all', null);
@@ -1889,7 +1836,7 @@ function setupSleepTimer() {
               nowPlayingBar.classList.remove('playing');
               setVinylSpin(false);
               // Restore volume for next play
-              setTimeout(() => { audio.volume = npbVolume ? npbVolume.value / 100 : 0.8; updateVolumeFill(); }, 400);
+              setTimeout(() => { audio.volume = 0.8; syncVolume(0.8); }, 400);
             }
           }, 100);
           return;

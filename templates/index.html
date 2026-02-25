@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
   <meta name="apple-touch-fullscreen" content="yes" />
@@ -421,12 +421,8 @@
 
   </main>
 
-  <!-- ── MINI PLAYER (expanded player overlay) ── -->
+  <!-- ── MINI PLAYER (now playing bar) ── -->
   <div class="now-playing-bar" id="now-playing-bar">
-    <!-- thin progress strip across top of bar -->
-    <div class="npb-progress-strip" aria-hidden="true">
-      <div class="npb-progress-strip-fill" id="npb-progress-strip-fill"></div>
-    </div>
     <div class="npb-row npb-row-main">
       <div class="npb-art" id="npb-art">
         <svg viewBox="0 0 40 40" fill="none">
@@ -438,32 +434,21 @@
       <div class="npb-info" id="npb-info">
         <div class="npb-title" id="npb-title">–</div>
         <div class="npb-artist" id="npb-artist">–</div>
+        <div class="npb-inline-progress">
+          <div class="npb-inline-fill" id="npb-inline-fill"></div>
+        </div>
       </div>
       <div class="npb-controls">
-        <button class="npb-btn" id="prev-btn">
+        <button class="npb-btn" id="prev-btn" aria-label="Previous">
           <svg viewBox="0 0 24 24" fill="currentColor"><path d="M6 6h2v12H6zm3.5 6l8.5 6V6z"/></svg>
         </button>
-        <button class="npb-btn npb-play" id="play-btn">
+        <button class="npb-btn npb-play" id="play-btn" aria-label="Play / Pause">
           <svg viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>
         </button>
-        <button class="npb-btn" id="next-btn">
+        <button class="npb-btn" id="next-btn" aria-label="Next">
           <svg viewBox="0 0 24 24" fill="currentColor"><path d="M6 18l8.5-6L6 6v12zM16 6v12h2V6h-2z"/></svg>
         </button>
       </div>
-    </div>
-    <!-- second row: shuffle | volume slider | repeat -->
-    <div class="npb-row npb-row-sub">
-      <button class="npb-sub-btn" id="npb-shuffle-btn" title="Shuffle">
-        <svg viewBox="0 0 24 24" fill="currentColor"><path d="M10.59 9.17L5.41 4 4 5.41l5.17 5.17 1.42-1.41zM14.5 4l2.04 2.04L4 18.59 5.41 20 17.96 7.46 20 9.5V4h-5.5zm.33 9.41l-1.41 1.41 3.13 3.13L14.5 20H20v-5.5l-2.04 2.04-3.13-3.13z"/></svg>
-      </button>
-      <div class="npb-vol-wrap">
-        <svg class="npb-vol-icon" viewBox="0 0 24 24" fill="currentColor"><path d="M7 9v6h4l5 5V4l-5 5H7z"/></svg>
-        <input type="range" id="npb-volume" class="npb-vol-slider" min="0" max="100" value="80" />
-        <svg class="npb-vol-icon" viewBox="0 0 24 24" fill="currentColor"><path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02zM14 3.23v2.06c2.89.86 5 3.54 5 6.71s-2.11 5.85-5 6.71v2.06c4.01-.91 7-4.49 7-8.77s-2.99-7.86-7-8.77z"/></svg>
-      </div>
-      <button class="npb-sub-btn" id="npb-repeat-btn" title="Repeat">
-        <svg viewBox="0 0 24 24" fill="currentColor"><path d="M7 7h10v3l4-4-4-4v3H5v6h2V7zm10 10H7v-3l-4 4 4 4v-3h12v-6h-2v4z"/></svg>
-      </button>
     </div>
   </div>
 
@@ -521,10 +506,7 @@
       </div>
       <div class="fpo-volume-wrap">
         <svg class="fpo-vol-icon" viewBox="0 0 24 24" fill="currentColor"><path d="M7 9v6h4l5 5V4l-5 5H7z"/></svg>
-        <div class="fpo-vol-bar" id="fpo-vol-bar">
-          <div class="fpo-vol-fill" id="fpo-vol-fill" style="width: 80%;"></div>
-          <div class="fpo-vol-thumb" id="fpo-vol-thumb" style="left: 80%;"></div>
-        </div>
+        <input type="range" id="fpo-volume" class="fpo-vol-slider" min="0" max="100" value="80" />
         <svg class="fpo-vol-icon" viewBox="0 0 24 24" fill="currentColor"><path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02zM14 3.23v2.06c2.89.86 5 3.54 5 6.71s-2.11 5.85-5 6.71v2.06c4.01-.91 7-4.49 7-8.77s-2.99-7.86-7-8.77z"/></svg>
       </div>
       <!-- Extra row: Like · Sleep Timer · Share -->

@@ -15,6 +15,10 @@ dist/
 # OS
 .DS_Store
 Thumbs.db
+desktop.ini
+
+# Local utilities
+generate_icons.py
 
 # Env / secrets
 .env

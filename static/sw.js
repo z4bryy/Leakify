@@ -1,4 +1,4 @@
-const CACHE_NAME = 'leakify-v5-security';
+const CACHE_NAME = 'leakify-v7-player-redesign';
 const STATIC_ASSETS = [
   '/',
   '/static/style.css',
