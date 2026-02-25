@@ -1236,6 +1236,9 @@ function setupAllEvents() {
   // ── Bottom Navigation ──
   setupBottomNav();
 
+  // ── Header frosted glass scroll depth ──
+  setupHeaderScrollGlass();
+
   // ── Parallax on scroll ──
   setupParallax();
 
@@ -1770,6 +1773,18 @@ function switchToVaultAndFilter(artist, tag) {
   applyFilter();
   const pc = $('player-content');
   if (pc) pc.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+// ══════════════════════════════════════════
+//  HEADER SCROLL GLASS DEPTH
+// ══════════════════════════════════════════
+function setupHeaderScrollGlass() {
+  const header  = document.querySelector('.player-header');
+  const content = $('player-content');
+  if (!header || !content) return;
+  content.addEventListener('scroll', () => {
+    header.classList.toggle('scrolled', content.scrollTop > 10);
+  }, { passive: true });
 }
 
 // ══════════════════════════════════════════
