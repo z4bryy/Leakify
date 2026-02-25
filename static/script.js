@@ -118,9 +118,14 @@ let sleepTimerIvl   = null; // setInterval id for countdown update
 // ── Audio Visualizer ──────────────────────────
 let audioCtx     = null;
 let analyserNode = null;
+let gainNode     = null;  // Web Audio GainNode — app-level volume, independent of device volume
 let vizAF        = null;
 let vizData      = null;
 const VIZ_BARS   = 52;
+
+// ── App volume (persisted) — separate from system/device volume ──────────────
+let appVolume = parseFloat(localStorage.getItem('leakify-volume') ?? '0.8');
+if (isNaN(appVolume) || appVolume < 0 || appVolume > 1) appVolume = 0.8;
 
 // ── Update toast ─────────────────────────────
 function showUpdateToast(msg, isError) {
@@ -140,6 +145,23 @@ function syncVolume(vol) {
   if (!slider) return;
   slider.value = pct;
   slider.style.background = `linear-gradient(to right, var(--purple) ${pct}%, rgba(255,255,255,0.12) ${pct}%)`;
+  try { localStorage.setItem('leakify-volume', vol); } catch (_) {}
+}
+
+// ── Set app-level volume (GainNode when available, fallback audio.volume) ──
+// This is the ONLY function that should be called to change volume.
+function setVolume(vol) {
+  vol = Math.max(0, Math.min(1, vol));
+  appVolume = vol;
+  if (gainNode) {
+    // GainNode operates inside the Web Audio graph — works independently of
+    // the OS/device volume slider, even on iOS where audio.volume is read-only.
+    gainNode.gain.setTargetAtTime(vol, audioCtx.currentTime, 0.015);
+  } else {
+    // Fallback before first user gesture (AudioContext not yet created)
+    audio.volume = vol;
+  }
+  syncVolume(vol);
 }
 
 // ── Media Session API — iOS Lock Screen / Control Center / AirPods ──
@@ -362,8 +384,9 @@ if ('serviceWorker' in navigator) {
 // ══════════════════════════════════════════
 window.addEventListener('DOMContentLoaded', () => {
   setupAllEvents();
-  audio.volume = 0.8;
-  syncVolume(0.8);
+  // Restore app-level volume from localStorage (appVolume already parsed at top)
+  audio.volume = appVolume; // pre-GainNode fallback
+  syncVolume(appVolume);
   // Boot: animate CSS 999 loader → show login
   startLoaderScreen();
 });
@@ -1026,9 +1049,7 @@ function setupAllEvents() {
   // Volume — single range input in FPO (reliable on all platforms including iOS)
   if (fpoVolume) {
     fpoVolume.addEventListener('input', () => {
-      const vol = fpoVolume.value / 100;
-      audio.volume = vol;
-      syncVolume(vol);
+      setVolume(fpoVolume.value / 100);
     });
     // Prevent the FPO swipe-down gesture from stealing touch on the range slider
     fpoVolume.addEventListener('touchstart', (e) => e.stopPropagation(), { passive: true });
@@ -1152,6 +1173,10 @@ function setupAllEvents() {
     // M = mute/unmute
     if (e.code === 'KeyM') {
       audio.muted = !audio.muted;
+      if (gainNode) {
+        // Drive GainNode so mute works even on iOS where audio.muted may be unreliable
+        gainNode.gain.setTargetAtTime(audio.muted ? 0 : appVolume, audioCtx.currentTime, 0.015);
+      }
       const opacity = audio.muted ? '0.4' : '1';
       if (fpoVolume) fpoVolume.style.opacity = opacity;
     }
@@ -1684,8 +1709,13 @@ function initAudioVisualizer() {
     analyserNode = audioCtx.createAnalyser();
     analyserNode.fftSize = 128;
     analyserNode.smoothingTimeConstant = 0.80;
+    // GainNode provides app-level volume independent of device volume (essential on iOS)
+    gainNode = audioCtx.createGain();
+    gainNode.gain.value = appVolume;
+    audio.volume = 1; // hand full control to GainNode from this point on
     src.connect(analyserNode);
-    analyserNode.connect(audioCtx.destination);
+    analyserNode.connect(gainNode);
+    gainNode.connect(audioCtx.destination);
     vizData = new Uint8Array(analyserNode.frequencyBinCount);
     startVisualizer();
   } catch (e) {

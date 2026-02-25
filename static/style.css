@@ -45,10 +45,10 @@ button, input, select, textarea {
   --ease:         cubic-bezier(0.25, 0.46, 0.45, 0.94);
   --ease-spring:  cubic-bezier(0.175, 0.885, 0.32, 1.275);
   --ease-bounce:  cubic-bezier(0.34, 1.56, 0.64, 1);
-  --npb-h:        76px;
-  --bnav-h:       70px;  /* bottom nav height (excl. safe area) */
-  --header-h:     60px;
-  --pills-h:      52px;
+  --npb-h:        62px;
+  --bnav-h:       54px;  /* bottom nav height (excl. safe area) */
+  --header-h:     48px;
+  --pills-h:      44px;
   --sb-h:         52px;
   /* 2026 design tokens */
   --glow-purple:  0 0 40px rgba(191,90,242,0.45), 0 0 80px rgba(191,90,242,0.18);
@@ -633,7 +633,7 @@ body {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: max(env(safe-area-inset-top), 12px) 20px 12px;
+  padding: max(env(safe-area-inset-top), 8px) 16px 8px;
   background: rgba(5, 0, 9, 0.72);
   backdrop-filter: blur(36px) saturate(220%);
   -webkit-backdrop-filter: blur(36px) saturate(220%);
@@ -661,13 +661,13 @@ body {
 .header-left { display: flex; align-items: center; gap: 10px; }
 
 .header-logo {
-  width: 32px; height: 32px;
+  width: 26px; height: 26px;
   background: linear-gradient(135deg, var(--purple), var(--pink));
-  border-radius: 8px;
+  border-radius: 7px;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 14px;
+  font-size: 12px;
   font-weight: 900;
   color: #fff;
   letter-spacing: 0;
@@ -681,9 +681,9 @@ body {
 }
 
 .header-title {
-  font-size: 18px;
+  font-size: 15px;
   font-weight: 800;
-  letter-spacing: 4px;
+  letter-spacing: 3px;
   background: linear-gradient(90deg, var(--purple), var(--pink));
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
@@ -692,7 +692,7 @@ body {
 .header-actions { display: flex; gap: 8px; align-items: center; }
 
 .icon-btn {
-  width: 44px; height: 44px;
+  width: 36px; height: 36px;
   background: rgba(255,255,255,0.07);
   border: 1px solid var(--border);
   border-radius: 50%;
@@ -703,7 +703,7 @@ body {
   color: var(--text-2);
   transition: background 0.2s, color 0.2s, transform 0.15s;
 }
-.icon-btn svg { width: 18px; height: 18px; }
+.icon-btn svg { width: 16px; height: 16px; }
 .icon-btn:active { background: rgba(191,90,242,0.2); color: var(--purple); transform: scale(0.9); }
 
 /* ── SEARCH BAR ── */
@@ -781,7 +781,7 @@ body {
   display: flex;
   align-items: center;
   gap: 8px;
-  padding: 10px 16px;
+  padding: 6px 14px;
   overflow-x: auto;
   overflow-y: hidden;
   height: 100%;
@@ -1904,7 +1904,7 @@ body {
 :root {
   --font-display: 'Bebas Neue', 'Impact', sans-serif;
   --font-grunge:  'Permanent Marker', cursive;
-  --bnav-h:        68px;
+  --bnav-h:        52px;
   --neon-1:        #8A2BE2;
   --neon-2:        #BF5AF2;
   --neon-3:        #D97EFF;
@@ -2349,8 +2349,8 @@ body {
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 3px;
-  padding: 8px 0 6px;
+  gap: 2px;
+  padding: 5px 0 4px;
   background: none;
   border: none;
   cursor: pointer;
@@ -2371,9 +2371,9 @@ body {
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 28px;
-  height: 28px;
-  border-radius: 8px;
+  width: 22px;
+  height: 22px;
+  border-radius: 7px;
   transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
 }
 .bnav-btn:active .bnav-icon-wrap {
@@ -2384,8 +2384,8 @@ body {
 }
 
 .bnav-icon {
-  width: 22px;
-  height: 22px;
+  width: 18px;
+  height: 18px;
   transition: filter 0.25s;
 }
 .bnav-btn.active .bnav-icon {
@@ -2396,9 +2396,9 @@ body {
 }
 
 .bnav-label {
-  font-size: 10px;
+  font-size: 9px;
   font-weight: 600;
-  letter-spacing: 0.4px;
+  letter-spacing: 0.3px;
   line-height: 1;
   text-transform: uppercase;
   transition: opacity 0.22s;
@@ -3887,7 +3887,7 @@ body {
 
 /* 7. Bottom nav: prevent label text from touching the home indicator */
 .bnav-btn {
-  padding-bottom: 8px;
+  padding-bottom: 5px;
 }
 
 /* 8. Player pills: use full width with proper touch targets */
