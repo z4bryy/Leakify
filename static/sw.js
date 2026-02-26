@@ -1,4 +1,4 @@
-const CACHE_NAME = 'leakify-v14';
+const CACHE_NAME = 'leakify-v15';
 const STATIC_ASSETS = [
   '/',
   '/static/style.css',
