@@ -12,6 +12,28 @@
   ],
   "routes": [
     {
+      "src": "/static/(.*)\\.(?:css|js|png|jpg|jpeg|webp|svg|ico|woff2?|ttf)",
+      "headers": {
+        "Cache-Control": "public, max-age=31536000, immutable"
+      },
+      "dest": "app.py"
+    },
+    {
+      "src": "/sw\\.js",
+      "headers": {
+        "Cache-Control": "no-cache, must-revalidate",
+        "Service-Worker-Allowed": "/"
+      },
+      "dest": "app.py"
+    },
+    {
+      "src": "/",
+      "headers": {
+        "Cache-Control": "no-store, no-cache, must-revalidate, max-age=0"
+      },
+      "dest": "app.py"
+    },
+    {
       "src": "/(.*)",
       "dest": "app.py"
     }

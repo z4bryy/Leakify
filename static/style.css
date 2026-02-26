@@ -2075,16 +2075,11 @@ body {
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
 
 /* ── ProMotion 120Hz: hint browser to keep animations on GPU ──
-   NOTE: Only applied to a small number of truly animated elements.
-   Applying will-change to 100+ track-cards / preview-songs would
-   allocate a separate GPU texture per card — exhausting VRAM on mobile. ── */
-.player-header,
-.bottom-nav,
+   IMPORTANT: Only truly animated overlay/bar elements get will-change.
+   Applying it to nav buttons, pills, and cards would allocate a separate
+   GPU texture per element — exhausting VRAM on iPhone 14 Pro / older A chips. ── */
 .now-playing-bar,
-.full-player-overlay,
-.bnav-btn,
-.pill,
-.artist-card {
+.full-player-overlay {
   will-change: transform;
 }
 
@@ -7460,12 +7455,15 @@ input, textarea {
 
 
 /* ══════════════════════════════════════════
-   PILLS STRIP
+   SEARCH BAR  (flex item, not sticky)
    ══════════════════════════════════════════ */
 .search-bar-wrap {
-  position: sticky !important;
-  top: 52px !important;
-  z-index: 30 !important;
+  /* search-bar-wrap is a flex item inside #screen-player which has overflow:hidden.
+     position:sticky inside overflow:hidden doesn't work — use relative.
+     The bar collapses/expands via max-height transition instead.          */
+  position: relative !important;
+  top: auto !important;
+  z-index: 19 !important;
   background: rgba(1,0,8,0.82) !important;
   backdrop-filter: blur(48px) saturate(260%) !important;
   -webkit-backdrop-filter: blur(48px) saturate(260%) !important;
@@ -7475,7 +7473,8 @@ input, textarea {
   border-radius: 12px !important;
   background: rgba(255,255,255,0.055) !important;
   border: 1px solid rgba(255,255,255,0.08) !important;
-  font-size: 13.5px !important;
+  /* MUST stay 16px on iOS to prevent Safari auto-zoom on focus */
+  font-size: 16px !important;
   color: #fff !important;
   padding: 0 14px 0 38px !important;
 }
@@ -7648,3 +7647,196 @@ input, textarea {
 #fpo-visualizer {
   will-change: contents;
 }
+
+/* ══════════════════════════════════════════════════════════════════
+   IPHONE 14 PRO / 15 / 16 COMPREHENSIVE FIXES  — Feb 2026
+   Targets: Dynamic Island (safe-area-top≈59px), 393×852pt viewport,
+            ProMotion 120Hz, PWA standalone mode, OLED display
+══════════════════════════════════════════════════════════════════ */
+
+/* ── 1. Body height: use -webkit-fill-available as a fallback in browser mode
+        so the address bar shrinking/growing doesn't break the fixed layout.   ── */
+html {
+  height: -webkit-fill-available;
+}
+body {
+  min-height: -webkit-fill-available;
+}
+
+/* ── 2. Screens — reliable full-height fill in standalone PWA mode ── */
+.screen {
+  /* Use dvh (dynamic viewport height) when available; older iOS falls back
+     to the fixed inset: 0 which is already set.                         */
+  height: 100dvh;
+}
+
+/* ── 3. Full player overlay — ensure scrollable content on small screens ──
+
+   On iPhone 14 Pro (852pt total, ~733pt available for fpo-content) the total
+   inner content (art + meta + progress + controls + volume + extra) can
+   exceed 730pt. We set the drag-handle + close-btn area to use a single CSS
+   clamp, shortening them on cramped screens so fpo-content gets more room.   */
+.full-player-overlay {
+  /* Display as a flex column so clamp-heights work; already set, but explicit ↓ */
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  /* Prevent the overlay itself from being a scroll container */
+  overflow: hidden;
+  /* Enable momentum scrolling in the child via -webkit-overflow-scrolling on
+     fpo-content, not here.                                                      */
+}
+
+/* Top handle area: coalesce drag-handle + close-btn into a fixed header block */
+.fpo-drag-handle {
+  /* Dynamic Island gap — must never overlap the island on any iPhone */
+  margin-top: max(env(safe-area-inset-top, 44px), 12px);
+  margin-bottom: 6px;
+}
+.fpo-close {
+  /* Keep margin compact; safe-area already pushed handle out of the way */
+  margin-top: 0;
+  margin-bottom: 6px;
+}
+
+/* fpo-content: the scrollable area.  On 393pt-wide iPhone 14 Pro use less
+   horizontal padding so the art isn't squished.                              */
+.fpo-content {
+  /* Robust scrolling on iOS — standard (no webkit-overflow-scrolling needed on iOS 15+) */
+  overflow-y: auto;
+  overscroll-behavior-y: contain;
+  /* Bottom safe area + breathing room */
+  padding-bottom: max(calc(env(safe-area-inset-bottom, 0px) + 36px), 50px);
+}
+
+@media (max-width: 430px) {
+  .fpo-content { padding-left: 20px; padding-right: 20px; }
+  .fpo-art {
+    width: min(68vw, 280px);
+    height: min(68vw, 280px);
+  }
+}
+
+/* On very short screens (landscape or small SE-class) shrink the art further */
+@media (max-height: 700px) {
+  .fpo-art {
+    width: clamp(160px, 45vmin, 240px) !important;
+    height: clamp(160px, 45vmin, 240px) !important;
+  }
+  .fpo-content { gap: 10px !important; }
+}
+
+/* ── 4. Player header — correct height on all notch / Dynamic Island phones ── */
+.player-header {
+  /* Recalculate – uses the runtime env() value (59px on iPhone 14 Pro) */
+  height: calc(var(--header-h) + env(safe-area-inset-top, 44px) + 10px);
+  padding-top: calc(env(safe-area-inset-top, 44px) + 10px);
+}
+
+/* ── 5. Mini player — always float above the bottom nav correctly ── */
+.now-playing-bar {
+  /* Safe bottom = 34px on iPhone 14 Pro; --bnav-h = 46px; gap = 10px → 90px  */
+  bottom: calc(var(--bnav-h) + max(env(safe-area-inset-bottom, 0px), 0px) + 10px);
+}
+
+/* ── 6. Bottom nav — strong safe area ── */
+.bottom-nav {
+  height: calc(var(--bnav-h) + env(safe-area-inset-bottom, 0px));
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+}
+
+/* ── 7. Scrollable content — correct bottom padding ── */
+.player-content {
+  padding-bottom: calc(
+    var(--bnav-h) +
+    var(--npb-h) +
+    max(env(safe-area-inset-bottom, 0px), 0px) +
+    32px
+  );
+}
+
+/* ── 8. Home hero — compact layout on narrow iPhone viewports ── */
+@media (max-width: 430px) {
+  .home-hero-title {
+    font-size: clamp(52px, 18vw, 80px) !important;
+    letter-spacing: -1px;
+  }
+  .home-hero-inner { padding: 20px 20px 0; }
+  .home-vinyl-ring-1, .home-vinyl-ring-2 { display: none; }
+  .home-hero-vinyl-wrap { right: -16px; }
+}
+
+/* ── 9. Artist card shelf — better horizontal snap feel on iPhone 14 Pro ── */
+.artist-shelf {
+  padding-left: max(env(safe-area-inset-left, 0px), 12px);
+  padding-right: max(env(safe-area-inset-right, 0px), 12px);
+}
+
+/* ── 10. Track card — ensure play/heart buttons have 44pt tap target ── */
+.track-card-heart,
+.track-card-action {
+  min-width: 44px;
+  min-height: 44px;
+}
+
+/* ── 11. Login screen — extra spacing for Dynamic Island and safe areas ── */
+#screen-login {
+  padding-top: max(env(safe-area-inset-top, 44px), 44px);
+  padding-bottom: max(env(safe-area-inset-bottom, 0px), 24px);
+  padding-left:  max(env(safe-area-inset-left,  0px), 0px);
+  padding-right: max(env(safe-area-inset-right, 0px), 0px);
+}
+
+/* ── 12. Text — OLED display sharpness ── */
+@supports (-webkit-font-smoothing: antialiased) {
+  * { -webkit-font-smoothing: antialiased; }
+}
+
+/* ── 13. Splash loader — fill properly on Dynamic Island devices ── */
+#screen-loader {
+  padding-top: env(safe-area-inset-top, 0px);
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+}
+
+/* ── 14. Queue panel — respect safe area at bottom ── */
+.queue-panel {
+  padding-bottom: max(env(safe-area-inset-bottom, 0px), 16px);
+}
+
+/* ── 15. Sleep timer modal — center properly ── */
+.stm-inner {
+  margin-bottom: max(env(safe-area-inset-bottom, 0px), 16px);
+}
+
+/* ── 16. Update toast — below Dynamic Island ── */
+.update-toast {
+  top: calc(env(safe-area-inset-top, 44px) + 56px);
+}
+
+/* ── 17. ProMotion 120Hz: scroll-snapping ── */
+@media (min-resolution: 3dppx) {
+  .player-content,
+  .fpo-content {
+    scroll-behavior: smooth;
+  }
+}
+
+/* ── 18. Standalone PWA mode: reduce particle density on older A-chips ── */
+@media (max-width: 375px) and (max-height: 812px) {
+  /* iPhone SE / iPhone 8 — less powerful GPU */
+  #particles-canvas { opacity: 0.45; }
+}
+
+/* ── 19. Prevent horizontal overflow rubber-band on body ── */
+body {
+  overscroll-behavior-x: none;
+}
+
+/* ── 20. Input zoom prevention — belt-and-suspenders (16px already set inline
+         but this guards against any future overrides)                     ── */
+#screen-login input,
+#search-input {
+  font-size: max(16px, 1rem) !important;
+}
+
+/* End iPhone 14 Pro+ Comprehensive Fixes */

@@ -303,7 +303,12 @@ def apple_touch_icon():
 
 @app.route('/')
 def index():
-    return render_template('index.html', csrf_token=_get_csrf_token())
+    resp = make_response(render_template('index.html', csrf_token=_get_csrf_token()))
+    # Never let Vercel CDN / any proxy cache the HTML — it contains a per-session
+    # CSRF token. A stale cached page would result in 403 on every login attempt.
+    resp.headers['Cache-Control'] = 'no-store, no-cache, must-revalidate, max-age=0'
+    resp.headers['Pragma'] = 'no-cache'
+    return resp
 
 # Serve service worker at root scope
 @app.route('/sw.js')
@@ -311,6 +316,9 @@ def service_worker():
     response = send_from_directory('static', 'sw.js')
     response.headers['Service-Worker-Allowed'] = '/'
     response.headers['Content-Type'] = 'application/javascript'
+    # SW must re-validate on every load (browsers already enforce 24h max,
+    # but this prevents Vercel CDN from serving a stale version)
+    response.headers['Cache-Control'] = 'no-cache, must-revalidate'
     return response
 
 @app.route('/api/songs')
