@@ -333,6 +333,8 @@ const heroEq         = $('hero-eq');
 // Mini player bar
 const nowPlayingBar  = $('now-playing-bar');
 const npbArt         = $('npb-art');
+const npbBgBlur      = $('npb-bg-blur');
+const npbEq          = $('npb-eq');
 const npbTitle       = $('npb-title');
 const npbArtist      = $('npb-artist');
 const npbPlayBtn     = $('play-btn');
@@ -912,6 +914,7 @@ function onPlayStart(song) {
   applyMarquee(npbTitle, song.display);
   npbArtist.textContent = song.artist;
   nowPlayingBar.classList.add('visible', 'playing');
+  if (npbEq) npbEq.setAttribute('data-playing', '1');
 
   // FPO
   applyMarquee(fpoTitle, song.display);
@@ -990,6 +993,10 @@ function setArtTint(artist) {
   fpoBg.style.background = `linear-gradient(180deg, ${c},0.18) 0%, rgba(6,0,8,0.95) 55%)`;
   heroGlow.style.background = `radial-gradient(circle, ${c},0.3), transparent 70%)`;
   fpoArtGlow.style.background = `radial-gradient(circle, ${c},0.45), transparent 65%)`;
+  // Mini player bg blur tint
+  if (npbBgBlur) {
+    npbBgBlur.style.background = `radial-gradient(ellipse 120% 120% at 30% 50%, ${c},0.55) 0%, ${c},0.20) 100%)`;
+  }
 }
 
 function togglePlay() {
