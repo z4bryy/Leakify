@@ -1,4 +1,4 @@
-const CACHE_NAME = 'leakify-v17';
+const CACHE_NAME = 'leakify-v18';
 // NOTE: '/' (the HTML page) is intentionally excluded — it is a Jinja template
 // containing a per-session CSRF token.  Caching it would serve a stale token and
 // break login after the session is reset.  Only pure static assets are cached.
