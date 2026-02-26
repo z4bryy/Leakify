@@ -1,40 +1,32 @@
 {
-  "builds": [
+  "functions": {
+    "app.py": {
+      "maxDuration": 30,
+      "includeFiles": "{static/**,templates/**}"
+    }
+  },
+  "headers": [
     {
-      "src": "app.py",
-      "use": "@vercel/python",
-      "config": {
-        "maxLambdaSize": "15mb",
-        "includeFiles": ["static/**", "templates/**"]
-      }
+      "source": "/static/(.*)\\.(?:css|js|png|jpg|jpeg|webp|svg|ico|woff2?|ttf)",
+      "headers": [
+        { "key": "Cache-Control", "value": "public, max-age=31536000, immutable" }
+      ]
+    },
+    {
+      "source": "/sw.js",
+      "headers": [
+        { "key": "Cache-Control", "value": "no-cache, must-revalidate" },
+        { "key": "Service-Worker-Allowed", "value": "/" }
+      ]
+    },
+    {
+      "source": "/",
+      "headers": [
+        { "key": "Cache-Control", "value": "no-store, no-cache, must-revalidate, max-age=0" }
+      ]
     }
   ],
-  "routes": [
-    {
-      "src": "/static/(.*)\\.(?:css|js|png|jpg|jpeg|webp|svg|ico|woff2?|ttf)",
-      "headers": {
-        "Cache-Control": "public, max-age=31536000, immutable"
-      },
-      "dest": "app.py"
-    },
-    {
-      "src": "/sw\\.js",
-      "headers": {
-        "Cache-Control": "no-cache, must-revalidate",
-        "Service-Worker-Allowed": "/"
-      },
-      "dest": "app.py"
-    },
-    {
-      "src": "/",
-      "headers": {
-        "Cache-Control": "no-store, no-cache, must-revalidate, max-age=0"
-      },
-      "dest": "app.py"
-    },
-    {
-      "src": "/(.*)",
-      "dest": "app.py"
-    }
+  "rewrites": [
+    { "source": "/(.*)", "destination": "/app.py" }
   ]
 }
