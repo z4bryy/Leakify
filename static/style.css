@@ -8608,3 +8608,143 @@ body {
 }
 
 /* End Visual Redesign 2026 */
+
+/* ═══════════════════════════════════════════════════════════════
+   TARGETED BUG FIXES — iOS Render (added after static code audit)
+   Chirurgické zásahy na základě analýzy CSS konfliktu.
+   ══════════════════════════════════════════════════════════════ */
+
+/* ── FIX 1: Neaktivní nav labely skoro neviditelné ─────────────
+   Line 7418 nastavila opacity:0.30 !important na .bnav-label.
+   Line 8221 resetovala color, ale opacity zůstala 0.30.
+   Výsledek: color alpha (0.36) × opacity (0.30) = cca 10% — neviditelné.
+   Oprava: reset opacity na 1 a zajistit normální color pro inactive stav. */
+.bnav-label {
+  opacity: 1 !important;
+  color: rgba(235,235,245,0.45) !important;
+  -webkit-text-fill-color: rgba(235,235,245,0.45) !important;
+}
+
+/* Aktivní label — gradient text (přebije výše nastavený webkit-text-fill-color) */
+.bnav-btn.active .bnav-label {
+  color: transparent !important;
+  -webkit-text-fill-color: transparent !important;
+  opacity: 1 !important;
+}
+
+/* ── FIX 2: iOS volume slider — systémový vzhled ───────────────
+   Bez -webkit-appearance:none iOS renderuje input[type=range]
+   jako nativní systémový slider a ignoruje všechny custom styly. */
+.fpo-vol-slider {
+  -webkit-appearance: none !important;
+  appearance: none !important;
+}
+.fpo-vol-slider::-webkit-slider-runnable-track {
+  height: 4px !important;
+  border-radius: 99px !important;
+  background: rgba(255,255,255,0.12) !important;
+}
+.fpo-vol-slider::-webkit-slider-thumb {
+  -webkit-appearance: none !important;
+  appearance: none !important;
+  width: 20px !important;
+  height: 20px !important;
+  border-radius: 50% !important;
+  background: #c084fc !important;
+  margin-top: -8px !important;
+  box-shadow: 0 0 8px rgba(168,85,247,0.60) !important;
+}
+
+/* ── FIX 3: Player header — ztracený +10px buffer nad Dynamic Island ─
+   @supports blok (linka 2099) overridoval padding-top na pouhé
+   max(env(safe-area-inset-top),14px) — bez +10px. Na Dynamic Island
+   (59px safe area) to znamená 59px místo 69px. Titulek se mohl dotýkat
+   Dynamic Island. Obnovujeme buffer. */
+.player-header {
+  padding-top: calc(env(safe-area-inset-top, 44px) + 14px) !important;
+}
+
+/* ── FIX 4: Bottom nav — safe area padding zajistit !important ─────
+   Původní padding-bottom (linka 2516) nemá !important, může být přebito.
+   Zajistíme, že home indicator area je vždy správně odsazena. */
+.bottom-nav {
+  padding-bottom: max(env(safe-area-inset-bottom), 8px) !important;
+}
+
+/* ── FIX 5: Smooth tap — zabránit ghost hover state na iOS ────────── */
+.bnav-btn,
+.npb-btn,
+.icon-btn,
+.fpo-ctrl-btn,
+.fpo-extra-btn {
+  -webkit-tap-highlight-color: transparent !important;
+  touch-action: manipulation !important;
+}
+
+/* End iOS Bug Fixes */
+
+/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+   TOUCH TARGET COMPLIANCE — Apple HIG 44×44pt minimum
+   All small interactive elements brought up to the minimum.
+   Uses min-width/min-height so the visual style is unaffected
+   while the tap/click area is expanded to a safe size.
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+
+/* ── 1. Header icon buttons (were 36px) ── */
+.player-header .icon-btn,
+.icon-btn {
+  min-width: 44px !important;
+  min-height: 44px !important;
+}
+
+/* ── 2. Filter / category pills (were 36px) ── */
+.pill {
+  min-height: 44px !important;
+}
+
+/* ── 3. Home preview song play button (was 30px) ── */
+.home-preview-song .hps-play {
+  min-width: 44px !important;
+  min-height: 44px !important;
+}
+
+/* ── 4. Full player close button (was 42px) ── */
+.fpo-close {
+  min-width: 44px !important;
+  min-height: 44px !important;
+}
+
+/* ── 5. Queue panel close button (was 36px) ── */
+.qp-close {
+  min-width: 44px !important;
+  min-height: 44px !important;
+}
+
+/* ── 6. FPO drag handle — enlarge tap area without changing the visual pill:
+        padding expands the clickable bounding box while the visual 5px bar
+        stays centered via the already-set flex/background styling.          ── */
+.fpo-drag-handle {
+  padding-top: 14px !important;
+  padding-bottom: 10px !important;
+  /* Re-adjust upward top margin so total top-offset stays the same */
+  margin-top: max(calc(env(safe-area-inset-top, 44px) - 14px), 0px) !important;
+  cursor: grab !important;
+}
+
+/* ── 7. Now-playing-bar progress strip — widen tap area for seeking ── */
+.npb-progress-strip {
+  height: 10px !important;
+  border-radius: 0 0 22px 22px !important;
+}
+.npb-progress-strip-fill {
+  height: 100% !important;
+  border-radius: 0 0 22px 22px !important;
+}
+
+/* ── 8. Ensure now-playing-bar art thumbnail (tap to open FPO) meets 44px ── */
+.npb-art {
+  min-width: 44px !important;
+  min-height: 44px !important;
+}
+
+/* End Touch Target Compliance 2026 */
