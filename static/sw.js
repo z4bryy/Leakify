@@ -1,4 +1,4 @@
-const CACHE_NAME = 'leakify-v18';
+const CACHE_NAME = 'leakify-v19';
 // NOTE: '/' (the HTML page) is intentionally excluded — it is a Jinja template
 // containing a per-session CSRF token.  Caching it would serve a stale token and
 // break login after the session is reset.  Only pure static assets are cached.
@@ -32,6 +32,7 @@ self.addEventListener('fetch', (event) => {
   // Always network-only:
   //  • HTML navigation requests — contains Jinja / CSRF tokens, must stay fresh
   //  • Audio, video, API endpoints — never stale-cache auth
+  //  • Cross-origin requests (Supabase, Google Fonts, Unsplash) — pass straight through
   if (
     event.request.mode === 'navigate' ||
     event.request.destination === 'document' ||
@@ -39,10 +40,10 @@ self.addEventListener('fetch', (event) => {
     url.includes('/video/') ||
     url.includes('/static/videos/') ||
     url.includes('/splash') ||
-    url.includes('/api/')
+    url.includes('/api/') ||
+    !url.startsWith(self.location.origin)   // cross-origin → never intercept
   ) {
-    event.respondWith(fetch(event.request));
-    return;
+    return;   // let the browser handle it natively (no respondWith = pass-through)
   }
 
   // Cache-first for static assets, but only store genuine 200 OK responses

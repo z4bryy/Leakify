@@ -137,10 +137,12 @@ def _add_security_headers(resp):
         "default-src 'self'; "
         "script-src 'self' 'unsafe-inline'; "
         "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; "
-        "font-src 'self' https://fonts.gstatic.com; "
-        "img-src 'self' data: https://images.unsplash.com; "
-        f"media-src 'self' blob: {media_src}; "
-        f"connect-src 'self' {media_src}; "
+        "font-src 'self' data: https://fonts.gstatic.com; "
+        "img-src 'self' data: blob: https://images.unsplash.com; "
+        f"media-src 'self' blob: {media_src} *.supabase.co; "
+        f"connect-src 'self' {media_src} *.supabase.co "
+        "https://fonts.googleapis.com https://fonts.gstatic.com "
+        "https://images.unsplash.com; "
         "frame-ancestors 'none';"
     )
     return resp
