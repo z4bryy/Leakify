@@ -414,8 +414,9 @@ def get_songs():
             url_map = _sb_signed_urls([s["filename"] for s in songs])
             for s in songs:
                 s["url"] = url_map.get(s["filename"], "")
-        except Exception:
-            pass
+        except Exception as sign_err:
+            # Signing failed — leave URLs empty; client will fetch via /api/song-url
+            app.logger.error(f'Supabase batch sign failed: {sign_err}')
 
         return jsonify({"songs": songs, "count": len(songs)})
 
@@ -491,7 +492,16 @@ def song_url():
 @app.route('/play/<path:filename>')
 @require_auth
 def play(filename):
-    """Stream audio file"""
+    """Stream audio file — redirect to Supabase signed URL on Vercel, serve locally otherwise."""
+    if USE_SUPABASE:
+        try:
+            url_map = _sb_signed_urls([filename])
+            signed = url_map.get(filename, '')
+            if signed:
+                return redirect(signed, code=302)
+        except Exception as e:
+            app.logger.error(f'play() sign error: {e}')
+        return jsonify({'error': 'Could not generate signed URL'}), 503
     return send_from_directory(MUSIC_FOLDER, filename)
 
 @app.route('/video/<path:filename>')
