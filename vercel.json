@@ -1,6 +1,6 @@
 {
   "functions": {
-    "app.py": {
+    "api/index.py": {
       "maxDuration": 30,
       "includeFiles": "{static/**,templates/**}"
     }
@@ -27,6 +27,6 @@
     }
   ],
   "rewrites": [
-    { "source": "/(.*)", "destination": "/app.py" }
+    { "source": "/(.*)", "destination": "/api/index.py" }
   ]
 }
